@@ -33,6 +33,9 @@ interface ProductDao {
     @Query("SELECT * FROM products WHERE categoryId = :categoryId AND deleted = 0 AND available = 1 ORDER BY name")
     fun observeAvailableInCategory(categoryId: String): Flow<List<ProductEntity>>
 
+    @Query("SELECT * FROM products WHERE deleted = 0 AND available = 1 ORDER BY name")
+    fun observeAvailable(): Flow<List<ProductEntity>>
+
     @Query("SELECT * FROM products WHERE id = :id")
     suspend fun byId(id: String): ProductEntity?
 

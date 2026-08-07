@@ -39,7 +39,7 @@ class BrowseViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     val products: StateFlow<List<ProductEntity>> = selectedCategoryId
         .flatMapLatest { id ->
-            if (id == null) catalog.products()
+            if (id == null) catalog.availableProducts()
             else catalog.availableProducts(id)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())

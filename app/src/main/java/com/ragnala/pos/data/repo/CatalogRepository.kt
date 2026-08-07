@@ -22,6 +22,7 @@ class CatalogRepository(
     fun products(): Flow<List<ProductEntity>> = productDao.observeAll()
     fun availableProducts(categoryId: String): Flow<List<ProductEntity>> =
         productDao.observeAvailableInCategory(categoryId)
+    fun availableProducts(): Flow<List<ProductEntity>> = productDao.observeAvailable()
     fun search(query: String): Flow<List<ProductEntity>> = productDao.search(query)
     suspend fun product(id: String): ProductEntity? = productDao.byId(id)
     suspend fun saveProduct(product: ProductEntity) = productDao.upsert(product)
