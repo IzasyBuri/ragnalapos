@@ -111,6 +111,21 @@ interface IngredientDao {
     @Query("SELECT * FROM recipe_items WHERE productId = :productId")
     suspend fun recipeForProductOnce(productId: String): List<RecipeItemEntity>
 
+    /**
+     * Checks if a product can be made with current ingredient stock.
+     * Returns true if the product has no recipe (no stock check needed) OR
+     * if all recipe ingredients have sufficient stock for 1 unit.
+     */
+    @Query("""
+        SELECT CASE WHEN COUNT(*) = 0 THEN 1 ELSE 0 END
+        FROM recipe_items ri
+        JOIN ingredients i ON i.id = ri.ingredientId
+        WHERE ri.productId = :productId
+          AND i.deleted = 0
+          AND i.currentStock - ri.quantity < 0
+    """)
+    suspend fun isProductInStock(productId: String): Boolean
+
     @Upsert
     suspend fun upsertRecipeItem(item: RecipeItemEntity)
 

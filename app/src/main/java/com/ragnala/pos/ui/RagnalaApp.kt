@@ -325,6 +325,7 @@ fun RagnalaApp() {
                     product = detailVm.product.collectAsState().value,
                     groups = detailVm.groups.collectAsState().value,
                     optionsByGroup = detailVm.optionsByGroup.collectAsState().value,
+                    isInStock = detailVm.isInStock.collectAsState().value,
                     onAddToCart = { quantity, modifiers ->
                         val p = detailVm.product.value ?: return@ProductDetailScreen
                         cartViewModel.add(

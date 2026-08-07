@@ -2,6 +2,7 @@
 
 import com.ragnala.pos.R
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -110,6 +111,7 @@ fun InventoryScreen(
                         Column(modifier = Modifier.padding(12.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(ing.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                                LowStockBadge(show = ing.currentStock <= ing.minStock)
                                 Text("${ing.currentStock} ${ing.unit}", style = MaterialTheme.typography.bodyLarge)
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -269,4 +271,18 @@ private fun AdjustStockDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.mgmt_cancel)) }
         },
     )
+}
+
+@Composable
+private fun LowStockBadge(show: Boolean) {
+    if (show) {
+        androidx.compose.material3.Text(
+            text = "⚠ Rendah",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier
+                .padding(horizontal = 8.dp, vertical = 2.dp)
+                .background(MaterialTheme.colorScheme.errorContainer, shape = MaterialTheme.shapes.small),
+        )
+    }
 }

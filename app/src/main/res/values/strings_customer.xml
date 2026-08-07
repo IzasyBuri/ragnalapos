@@ -11,12 +11,13 @@
     <string name="cust_choose_options">Pilih opsi untuk %1$s</string>
     <string name="cust_menu_brewing">Menu segar sedang disiapkan…</string>
 
-    <!-- Product detail -->
+<!-- Product detail -->
     <string name="cust_product_not_found">Produk tidak ditemukan</string>
     <string name="cust_back">Kembali</string>
-    <string name="cust_required_marker">• wajib</string>
+    <string name="cust_required_marker">�?� wajib</string>
     <string name="cust_choose_up_to">pilih hingga %1$d</string>
     <string name="cust_add_to_cart">Tambah ke keranjang</string>
+    <string name="cust_sold_out">Habis</string>
 
     <!-- Cart -->
     <string name="cust_cart_empty">Keranjang Anda kosong</string>

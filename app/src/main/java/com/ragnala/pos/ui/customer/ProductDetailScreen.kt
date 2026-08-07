@@ -60,6 +60,7 @@ fun ProductDetailScreen(
     product: ProductEntity?,
     groups: List<ModifierGroupEntity>,
     optionsByGroup: Map<String, List<ModifierOptionEntity>>,
+    isInStock: Boolean,
     onAddToCart: (quantity: Int, modifiers: List<CartModifier>) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -69,6 +70,8 @@ fun ProductDetailScreen(
         }
         return
     }
+
+    val outOfStock = !isInStock
 
     var quantity by remember { mutableStateOf(1) }
     // selections: groupId -> set of selected optionIds
@@ -174,27 +177,26 @@ fun ProductDetailScreen(
                     val missingRequired = requiredGroups.any { group ->
                         (selectedMap[group.id]?.size ?: 0) < group.minSelections
                     }
+                    val canAdd = !missingRequired && !outOfStock
                     Button(
-                        onClick = {
-                            onAddToCart(
-                                quantity,
-                                selectedMap.flatMap { (groupId, optionIds) ->
-                                    optionIds.mapNotNull { optionId ->
-                                        val group = groups.firstOrNull { it.id == groupId } ?: return@mapNotNull null
-                                        val option = optionsByGroup[groupId].orEmpty().firstOrNull { it.id == optionId } ?: return@mapNotNull null
-                                        CartModifier(group.name, option.name, option.priceDelta)
-                                    }
-                                },
-                            )
-                        },
-                        enabled = !missingRequired,
+                        onClick = { onAddToCart(quantity, selectedMap.flatMap { (groupId, optionIds) ->
+                            optionIds.mapNotNull { optionId ->
+                                val group = groups.firstOrNull { it.id == groupId } ?: return@mapNotNull null
+                                val option = optionsByGroup[groupId].orEmpty().firstOrNull { it.id == optionId } ?: return@mapNotNull null
+                                CartModifier(group.name, option.name, option.priceDelta)
+                            }
+                        }) },
+                        enabled = canAdd,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
+                            containerColor = if (outOfStock) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f) else MaterialTheme.colorScheme.primary,
                         ),
                         shape = RoundedCornerShape(20.dp),
                         modifier = Modifier.height(52.dp),
                     ) {
-                        Text(stringResource(R.string.cust_add_to_cart), style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            if (outOfStock) stringResource(R.string.cust_sold_out) else stringResource(R.string.cust_add_to_cart),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
                     }
                 }
             }

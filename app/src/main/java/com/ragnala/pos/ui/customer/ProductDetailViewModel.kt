@@ -14,14 +14,13 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/**
- * Detail screen data: the product plus its modifier groups and options,
+/** Detail screen data: the product plus its modifier groups and options,
  * loaded live from Room. Selection state lives in the screen (ProductDetailScreen);
- * this VM only sources data.
- */
+ * this VM only sources data. */
 class ProductDetailViewModel(
     private val catalog: CatalogRepository,
     productId: String,
@@ -30,6 +29,11 @@ class ProductDetailViewModel(
     val product: StateFlow<ProductEntity?> = flowOf(productId)
         .flatMapLatest { id -> flowOf(catalog.product(id)) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** True if product has a recipe and all ingredients have enough stock for 1 unit. Products without recipes are always in stock. */
+    val isInStock: StateFlow<Boolean> = flowOf(productId)
+        .flatMapLatest { id -> flowOf(catalog.isProductInStock(id)) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     val groups: StateFlow<List<ModifierGroupEntity>> = flowOf(productId)
         .flatMapLatest { id -> catalog.modifierGroups(id) }

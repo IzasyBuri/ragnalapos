@@ -30,6 +30,9 @@ class CatalogRepository(
         productDao.setAvailability(id, available, System.currentTimeMillis())
     suspend fun deleteProduct(product: ProductEntity) = productDao.delete(product)
 
+    /** Checks if a product has enough ingredient stock for 1 unit. Products without recipes are always in stock. */
+    suspend fun isProductInStock(productId: String): Boolean = ingredientDao.isProductInStock(productId)
+
     fun ingredients(): Flow<List<IngredientEntity>> = ingredientDao.observeAll()
 
     fun modifierGroups(productId: String): Flow<List<ModifierGroupEntity>> =
