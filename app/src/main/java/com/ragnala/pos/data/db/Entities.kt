@@ -101,7 +101,9 @@ data class IngredientEntity(
     val unit: String,              // ml, g, pcs, shot, scoop
     val currentStock: Double,
     val minStock: Double,
-    val costPerUnit: Long,         // integer rupiah
+    val costPerUnit: Long,         // integer rupiah; derived fallback when no pack info
+    val purchasePrice: Long? = null, // integer rupiah per pack
+    val packSize: Double? = null,  // pack size in [unit]; cost per unit = purchasePrice / packSize
     val createdAt: Long,
     val updatedAt: Long,
     val deleted: Boolean = false,

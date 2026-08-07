@@ -37,7 +37,10 @@
     <string name="mgmt_ingredient_unit">Satuan (ml, g, pcs, shot, scoop)</string>
     <string name="mgmt_current_stock">Stok saat ini</string>
     <string name="mgmt_min_stock">Stok minimum</string>
-    <string name="mgmt_cost_per_unit">Biaya per satuan (Rp)</string>
+    <string name="mgmt_purchase_price">Harga beli (Rp)</string>
+    <string name="mgmt_pack_size">Isi / volume (unit)</string>
+    <string name="mgmt_cost_derived_hint">Biaya per satuan dihitung otomatis dari harga beli dan isi (contoh: Rp33.000 untuk 330 ml → Rp100/ml).</string>
+    <string name="mgmt_cost_per_unit_short">Biaya %1$s / %2$s</string>
     <string name="mgmt_save">Simpan</string>
     <string name="mgmt_delete">Hapus</string>
     <string name="mgmt_cancel">Batal</string>

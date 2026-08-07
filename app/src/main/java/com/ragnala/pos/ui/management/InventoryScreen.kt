@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ragnala.pos.data.db.IngredientEntity
 import com.ragnala.pos.ui.customer.formatRupiah
+import com.ragnala.pos.ui.customer.trimAmount
 
 /** Inventory (PRD Â§9): ingredients, low-stock surfacing, stock adjustments, CRUD. */
 @Composable
@@ -103,7 +104,7 @@ fun InventoryScreen(
                         color = MaterialTheme.colorScheme.surface,
                         shadowElevation = 2.dp,
                         shape = MaterialTheme.shapes.medium,
-                        onClick = { editing = ing },
+                        onClick = { editing = ing; showForm = true },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
@@ -113,7 +114,14 @@ fun InventoryScreen(
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("min ${ing.minStock}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-                                Text("cost ${formatRupiah(ing.costPerUnit)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    if (ing.purchasePrice != null && ing.packSize != null)
+                                        "${formatRupiah(ing.purchasePrice)} / ${trimAmount(ing.packSize)} ${ing.unit}"
+                                    else
+                                        stringResource(R.string.mgmt_cost_per_unit_short, formatRupiah(ing.costPerUnit), ing.unit),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
                             TextButton(onClick = { adjusting = ing }, modifier = Modifier.padding(top = 4.dp)) {
                                 Text(stringResource(R.string.mgmt_adjust_stock))
@@ -137,8 +145,8 @@ fun InventoryScreen(
             title = if (editing == null) stringResource(R.string.mgmt_add_ingredient) else stringResource(R.string.mgmt_edit_ingredient),
             initial = editing,
             onDismiss = { showForm = false; editing = null },
-            onSave = { id, name, unit, current, min, cost ->
-                viewModel.saveIngredient(id, name, unit, current, min, cost)
+            onSave = { id, name, unit, current, min, harga, isi ->
+                viewModel.saveIngredient(id, name, unit, current, min, harga, isi)
                 showForm = false
                 editing = null
             },
@@ -169,14 +177,15 @@ private fun IngredientFormDialog(
     title: String,
     initial: IngredientEntity?,
     onDismiss: () -> Unit,
-    onSave: (String?, String, String, Double, Double, Long) -> Unit,
+    onSave: (String?, String, String, Double, Double, Long, Double) -> Unit,
     onDelete: ((IngredientEntity) -> Unit)?,
 ) {
     var name by remember { mutableStateOf(initial?.name ?: "") }
     var unit by remember { mutableStateOf(initial?.unit ?: "") }
     var current by remember { mutableStateOf(initial?.currentStock?.toString() ?: "0") }
     var min by remember { mutableStateOf(initial?.minStock?.toString() ?: "0") }
-    var cost by remember { mutableStateOf(initial?.costPerUnit?.toString() ?: "0") }
+    var harga by remember { mutableStateOf(initial?.purchasePrice?.toString() ?: initial?.costPerUnit?.toString() ?: "0") }
+    var isi by remember { mutableStateOf(initial?.packSize?.toString() ?: "1") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -187,13 +196,22 @@ private fun IngredientFormDialog(
                 OutlinedTextField(value = unit, onValueChange = { unit = it }, label = { Text(stringResource(R.string.mgmt_ingredient_unit)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = current, onValueChange = { current = it.filter { c -> c.isDigit() || c == '.' } }, label = { Text(stringResource(R.string.mgmt_current_stock)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = min, onValueChange = { min = it.filter { c -> c.isDigit() || c == '.' } }, label = { Text(stringResource(R.string.mgmt_min_stock)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = cost, onValueChange = { cost = it.filter { c -> c.isDigit() } }, label = { Text(stringResource(R.string.mgmt_cost_per_unit)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = harga, onValueChange = { harga = it.filter { c -> c.isDigit() } }, label = { Text(stringResource(R.string.mgmt_purchase_price)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = isi, onValueChange = { isi = it.filter { c -> c.isDigit() || c == '.' } }, label = { Text(stringResource(R.string.mgmt_pack_size)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, modifier = Modifier.fillMaxWidth())
+                Text(
+                    text = stringResource(R.string.mgmt_cost_derived_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    onSave(initial?.id, name, unit, current.toDoubleOrNull() ?: 0.0, min.toDoubleOrNull() ?: 0.0, cost.toLongOrNull() ?: 0L)
+                    val packSize = isi.toDoubleOrNull()
+                    if (packSize != null && packSize > 0) {
+                        onSave(initial?.id, name, unit, current.toDoubleOrNull() ?: 0.0, min.toDoubleOrNull() ?: 0.0, harga.toLongOrNull() ?: 0L, packSize)
+                    }
                 },
             ) { Text(stringResource(R.string.mgmt_save)) }
         },

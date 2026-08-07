@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.ragnala.pos.data.db.IngredientEntity
 import com.ragnala.pos.data.repo.InventoryRepository
+import com.ragnala.pos.domain.Money
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,18 +46,29 @@ class InventoryViewModel(
         }
     }
 
-    /** Creates or updates an ingredient. */
-    fun saveIngredient(id: String?, name: String, unit: String, currentStock: Double, minStock: Double, costPerUnit: Long) {
+    /** Creates or updates an ingredient from a pack purchase price + pack size. */
+    fun saveIngredient(
+        id: String?,
+        name: String,
+        unit: String,
+        currentStock: Double,
+        minStock: Double,
+        purchasePrice: Long,
+        packSize: Double,
+    ) {
         viewModelScope.launch {
             _error.value = null
             try {
                 val now = System.currentTimeMillis()
+                val costPerUnit = Money.roundHalfUp(Money.unitCost(purchasePrice, packSize))
                 val existing = id?.let { repository.ingredient(it) }
                 val entity = existing?.copy(
                     name = name.trim(),
                     unit = unit.trim(),
                     currentStock = currentStock,
                     minStock = minStock,
+                    purchasePrice = purchasePrice,
+                    packSize = packSize,
                     costPerUnit = costPerUnit,
                     updatedAt = now,
                 ) ?: IngredientEntity(
@@ -65,6 +77,8 @@ class InventoryViewModel(
                     unit = unit.trim(),
                     currentStock = currentStock,
                     minStock = minStock,
+                    purchasePrice = purchasePrice,
+                    packSize = packSize,
                     costPerUnit = costPerUnit,
                     createdAt = now,
                     updatedAt = now,

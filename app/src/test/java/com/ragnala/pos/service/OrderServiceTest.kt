@@ -60,6 +60,18 @@ class OrderServiceTest {
         return id
     }
 
+    private suspend fun seedPackedIngredient(id: String, stock: Double, price: Long, packSize: Double): String {
+        db.ingredientDao().upsert(
+            IngredientEntity(
+                id = id, name = "ing-$id", unit = "ml",
+                currentStock = stock, minStock = 10.0, costPerUnit = price.toLong() / packSize.toLong(),
+                purchasePrice = price, packSize = packSize,
+                createdAt = 0, updatedAt = 0,
+            ),
+        )
+        return id
+    }
+
     private suspend fun seedRecipe(productId: String, ingredientId: String, qty: Double) {
         // Audit M2 FK enforced: a recipe row's productId must reference an existing product.
         db.productDao().upsert(
@@ -293,6 +305,7 @@ class OrderServiceTest {
         val paid = db.orderDao().byId(draftId)!!
         assertEquals(OrderStatus.PAID, paid.status)
         assertEquals(50000L, paid.total)
+        assertEquals(72000L, paid.cogs) // legacy costPerUnit 2000 * 18g * 2
         assertEquals(64.0, db.ingredientDao().byId(espresso)!!.currentStock, 0.0001) // 100 - 2*18
 
         val payment = db.paymentDao().forOrder(draftId)
@@ -300,6 +313,28 @@ class OrderServiceTest {
         assertEquals("QRIS", payment[0].method)
         assertEquals(50000L, payment[0].amount)
         assertEquals(null, payment[0].tendered)
+    }
+
+    @Test
+    fun `pack priced ingredient costs exactly proportional price`() = runTest {
+        val milk = seedPackedIngredient("milk", 990.0, 33000L, 330.0)
+        seedRecipe("p1", milk, 110.0) // 110 ml per drink
+
+        val draftId = UUID.randomUUID().toString()
+        service.confirmOrder(draftId, "P", listOf(cartLine("p1", "Latte", 25000, 1)), 0.0, 0.0, 1000L)
+        // 33000 / 330 * 110 = exactly 11000
+        assertEquals(11000L, db.orderDao().byId(draftId)!!.cogs)
+    }
+
+    @Test
+    fun `uneven pack cost rounds once on the total`() = runTest {
+        val milk = seedPackedIngredient("milk", 1000.0, 20000L, 750.0)
+        seedRecipe("p1", milk, 110.0)
+
+        val draftId = UUID.randomUUID().toString()
+        service.confirmOrder(draftId, "P", listOf(cartLine("p1", "Latte", 25000, 1)), 0.0, 0.0, 1000L)
+        // 20000/750 = 26.6666 per ml, x110 = 2933.33 -> 2933 (no floats in money)
+        assertEquals(2933L, db.orderDao().byId(draftId)!!.cogs)
     }
 
     @Test

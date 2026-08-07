@@ -275,9 +275,16 @@ class OrderService(
             val recipe = ingredientDao.recipeForProductOnce(line.productId)
             val lineCost = recipe.sumOf { item ->
                 val ingredient = costById[item.ingredientId] ?: return@sumOf 0L
+                val perUnit = when {
+                    ingredient.purchasePrice != null &&
+                        ingredient.packSize != null &&
+                        ingredient.packSize > 0 ->
+                        Money.unitCost(ingredient.purchasePrice, ingredient.packSize)
+
+                    else -> java.math.BigDecimal.valueOf(ingredient.costPerUnit.toLong())
+                }
                 Money.roundHalfUp(
-                    java.math.BigDecimal.valueOf(ingredient.costPerUnit.toLong())
-                        .multiply(java.math.BigDecimal.valueOf(item.quantity))
+                    perUnit.multiply(java.math.BigDecimal.valueOf(item.quantity))
                 )
             }
             lineCost * line.quantity
