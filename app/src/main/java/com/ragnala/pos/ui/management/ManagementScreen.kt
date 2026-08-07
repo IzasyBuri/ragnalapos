@@ -91,6 +91,23 @@ fun ManagementScreen(
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
             }
 
+            // Menu products are editable by both barista and owner (no owner PIN required).
+            Surface(
+                onClick = onProductsClick,
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(stringResource(R.string.mgmt_menu_products), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.mgmt_menu_products_desc),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+
             if (!ownerVerified) {
                 OutlinedTextField(
                     value = ownerPin,
@@ -109,21 +126,6 @@ fun ManagementScreen(
             }
 
             // Owner verified â€” show settings
-            Surface(
-                onClick = onProductsClick,
-                shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(stringResource(R.string.mgmt_menu_products), style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        stringResource(R.string.mgmt_menu_products_desc),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-            }
             ManagementMenuRow(stringResource(R.string.mgmt_inventory_title), stringResource(R.string.mgmt_inventory_desc), onInventoryClick)
             ManagementMenuRow(stringResource(R.string.mgmt_expenses_title), stringResource(R.string.mgmt_expenses_desc), onExpensesClick)
             ManagementMenuRow(stringResource(R.string.mgmt_reports_title), stringResource(R.string.mgmt_reports_desc), onReportsClick)

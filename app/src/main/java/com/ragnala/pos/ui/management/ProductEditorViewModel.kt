@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.ragnala.pos.data.db.CategoryEntity
+import com.ragnala.pos.data.db.IngredientEntity
 import com.ragnala.pos.data.db.ModifierGroupEntity
 import com.ragnala.pos.data.db.ProductEntity
+import com.ragnala.pos.data.db.RecipeItemEntity
 import com.ragnala.pos.data.repo.CatalogRepository
 import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,9 +27,16 @@ data class ProductEditorState(
     val imagePath: String? = null,
     val available: Boolean = true,
     val selectedGroupIds: Set<String> = emptySet(),
+    val recipeItems: List<RecipeDraft> = emptyList(),
     val saving: Boolean = false,
     val error: String? = null,
     val savedProductId: String? = null,
+)
+
+/** One row of the optional recipe editor: ingredient picker + quantity text. */
+data class RecipeDraft(
+    val ingredientId: String? = null,
+    val quantity: String = "",
 )
 
 data class ValidProductInput(
@@ -45,6 +54,10 @@ class ProductEditorViewModel(private val catalog: CatalogRepository) : ViewModel
 
     /** All modifier groups in the catalog, for the owner to assign to this product. */
     val allGroups: StateFlow<List<ModifierGroupEntity>> = catalog.allModifierGroups()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** All (non-deleted) ingredients available for the recipe editor. */
+    val ingredients: StateFlow<List<IngredientEntity>> = catalog.ingredients()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _state = MutableStateFlow(ProductEditorState())
@@ -68,6 +81,26 @@ class ProductEditorViewModel(private val catalog: CatalogRepository) : ViewModel
         )
     }
 
+    /** Recipe editor (optional): an ingredient for every menu item. */
+    fun addRecipeRow() = update { copy(recipeItems = recipeItems + RecipeDraft()) }
+    fun removeRecipeRow(index: Int) = update {
+        copy(recipeItems = recipeItems.filterIndexed { i, _ -> i != index })
+    }
+    fun setRecipeIngredient(index: Int, ingredientId: String?) = update {
+        copy(
+            recipeItems = recipeItems.mapIndexed { i, draft ->
+                if (i == index) draft.copy(ingredientId = ingredientId) else draft
+            },
+        )
+    }
+    fun setRecipeQuantity(index: Int, text: String) = update {
+        copy(
+            recipeItems = recipeItems.mapIndexed { i, draft ->
+                if (i == index) draft.copy(quantity = text) else draft
+            },
+        )
+    }
+
     /** Load an existing product into the form for editing. */
     fun loadForEdit(productId: String) {
         viewModelScope.launch {
@@ -77,6 +110,8 @@ class ProductEditorViewModel(private val catalog: CatalogRepository) : ViewModel
             val assigned = catalog.modifierGroups(productId).first()
                 .map { it.id }
                 .toSet()
+            val recipe = catalog.recipe(productId).first()
+                .map { RecipeDraft(ingredientId = it.ingredientId, quantity = formatQuantity(it.quantity)) }
             _state.value = ProductEditorState(
                 editingId = product.id,
                 name = product.name,
@@ -86,6 +121,7 @@ class ProductEditorViewModel(private val catalog: CatalogRepository) : ViewModel
                 imagePath = product.imagePath,
                 available = product.available,
                 selectedGroupIds = assigned,
+                recipeItems = recipe,
             )
         }
     }
@@ -118,6 +154,8 @@ class ProductEditorViewModel(private val catalog: CatalogRepository) : ViewModel
                 )
                 catalog.saveProduct(product)
                 catalog.setProductModifierGroups(product.id, current.selectedGroupIds.toList())
+                val recipeItems = buildRecipeItems(product.id, current.recipeItems)
+                catalog.saveRecipe(product.id, recipeItems)
                 product.id
             }.onSuccess { productId ->
                 _state.value = _state.value.copy(saving = false, savedProductId = productId)
@@ -197,3 +235,28 @@ internal fun formatPriceInput(price: Long): String {
         groups.forEachIndexed { i, sep -> append(sep); append(s[i]) }
     }
 }
+
+/** Recipe editor input -> persisted RecipeItemEntity list. Optional: empty list is allowed. */
+internal fun buildRecipeItems(productId: String, drafts: List<RecipeDraft>): List<RecipeItemEntity> {
+    // Drop incomplete rows (no ingredient / blank or non-positive quantity), then merge duplicate
+    // ingredient picks by summing their quantities so stock never gets double-deducted.
+    val merged = LinkedHashMap<String, Double>()
+    drafts.forEach { draft ->
+        val ingredientId = draft.ingredientId ?: return@forEach
+        val qty = draft.quantity.trim().toDoubleOrNull() ?: return@forEach
+        if (qty <= 0.0) return@forEach
+        merged[ingredientId] = (merged[ingredientId] ?: 0.0) + qty
+    }
+    return merged.map { (ingredientId, qty) ->
+        RecipeItemEntity(
+            id = UUID.randomUUID().toString(),
+            productId = productId,
+            ingredientId = ingredientId,
+            quantity = qty,
+        )
+    }
+}
+
+/** Shows 1.5 as "1.5", 18.0 as "18". */
+internal fun formatQuantity(value: Double): String =
+    if (value % 1.0 == 0.0) value.toLong().toString() else value.toString()

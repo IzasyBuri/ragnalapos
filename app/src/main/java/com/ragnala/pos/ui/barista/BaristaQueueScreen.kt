@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +39,7 @@ import com.ragnala.pos.ui.theme.SteamWisp
 fun BaristaQueueScreen(
     viewModel: BaristaQueueViewModel,
     onOrderClick: (OrderEntity) -> Unit = {},
+    onManageMenu: () -> Unit = {},
 ) {
     val orders by viewModel.activeOrders.collectAsState()
 
@@ -47,15 +49,25 @@ fun BaristaQueueScreen(
             shadowElevation = 2.dp,
         ) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                Text(
-                    text = stringResource(R.string.barista_mode),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-                Text(
-                    text = stringResource(R.string.barista_active_orders),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.barista_mode),
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                        Text(
+                            text = stringResource(R.string.barista_active_orders),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    OutlinedButton(onClick = onManageMenu) {
+                        Text(stringResource(R.string.mgmt_manage_menu))
+                    }
+                }
             }
         }
 
@@ -84,11 +96,13 @@ fun BaristaQueueScreen(
     }
 }
 
-private val STATUS_LABEL = mapOf(
-    OrderStatus.WAITING_PAYMENT to "Waiting for payment",
-    OrderStatus.PAID to "Paid",
-    OrderStatus.FULFILLED to "Fulfilled",
-)
+@Composable
+internal fun orderStatusLabel(status: OrderStatus): String = when (status) {
+    OrderStatus.WAITING_PAYMENT -> stringResource(R.string.barista_status_waiting)
+    OrderStatus.PAID -> stringResource(R.string.barista_status_paid)
+    OrderStatus.FULFILLED -> stringResource(R.string.barista_status_fulfilled)
+    else -> status.name
+}
 
 @Composable
 private fun OrderQueueCard(order: OrderEntity, onClick: () -> Unit) {
@@ -110,7 +124,7 @@ private fun OrderQueueCard(order: OrderEntity, onClick: () -> Unit) {
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = STATUS_LABEL[order.status] ?: order.status.name,
+                    text = orderStatusLabel(order.status),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )

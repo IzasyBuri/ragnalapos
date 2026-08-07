@@ -44,4 +44,7 @@
     <string name="barista_owner_pin_required">PIN Pemilik (wajib)</string>
     <string name="barista_cancel">Batal</string>
     <string name="barista_confirm">Konfirmasi</string>
+    <string name="barista_status_waiting">Menunggu pembayaran</string>
+    <string name="barista_status_paid">Dibayar</string>
+    <string name="barista_status_fulfilled">Selesai</string>
 </resources>

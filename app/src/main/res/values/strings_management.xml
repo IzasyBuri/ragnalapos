@@ -99,4 +99,10 @@
     <string name="mgmt_product_photo">Foto produk</string>
     <string name="mgmt_remove_photo">Hapus foto</string>
     <string name="mgmt_add_photo">Tambah foto</string>
+    <string name="mgmt_ingredients_title">Bahan / Resep</string>
+    <string name="mgmt_ingredients_optional_hint">Opsional — biarkan kosong bila item ini tidak memakai stok bahan.</string>
+    <string name="mgmt_ingredient_picker_hint">Pilih bahan</string>
+    <string name="mgmt_quantity">Jumlah</string>
+    <string name="mgmt_recipe_empty_hint">Stok bahan otomatis terpotong saat pesanan dibayar bila bahan diisi.</string>
+    <string name="mgmt_manage_menu">Kelola Menu</string>
 </resources>

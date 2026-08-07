@@ -1,4 +1,4 @@
-﻿package com.ragnala.pos.ui.management
+package com.ragnala.pos.ui.management
 
 import com.ragnala.pos.R
 
@@ -25,20 +25,27 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +58,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.ragnala.pos.data.db.CategoryEntity
+import com.ragnala.pos.data.db.IngredientEntity
 import com.ragnala.pos.data.db.ModifierGroupEntity
 
 @Composable
@@ -58,6 +66,7 @@ fun ProductEditorScreen(
     state: ProductEditorState,
     categories: List<CategoryEntity>,
     groups: List<ModifierGroupEntity> = emptyList(),
+    ingredients: List<IngredientEntity> = emptyList(),
     onNameChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
     onPriceChange: (String) -> Unit,
@@ -65,6 +74,10 @@ fun ProductEditorScreen(
     onAvailableChange: (Boolean) -> Unit,
     onImagePathChange: (String?) -> Unit,
     onToggleGroup: (String) -> Unit = {},
+    onAddRecipeRow: () -> Unit = {},
+    onRemoveRecipeRow: (Int) -> Unit = {},
+    onRecipeIngredientChange: (Int, String?) -> Unit = { _, _ -> },
+    onRecipeQuantityChange: (Int, String) -> Unit = { _, _ -> },
     onSave: () -> Unit,
     onSaved: () -> Unit,
     onBack: () -> Unit,
@@ -187,10 +200,11 @@ fun ProductEditorScreen(
                                     style = MaterialTheme.typography.bodyLarge,
                                     modifier = Modifier.padding(start = 8.dp),
                                 )
-                            }
-                        }
-                    }
-                }
+}
+        }
+    }
+}
+
 
                 Surface(
                     shape = MaterialTheme.shapes.medium,
@@ -230,6 +244,16 @@ fun ProductEditorScreen(
                     selectedIds = state.selectedGroupIds,
                     onToggle = onToggleGroup,
                     enabled = !state.saving,
+                )
+
+                RecipeIngredientsSection(
+                    drafts = state.recipeItems,
+                    ingredients = ingredients,
+                    enabled = !state.saving,
+                    onAdd = onAddRecipeRow,
+                    onRemove = onRemoveRecipeRow,
+                    onIngredientChange = onRecipeIngredientChange,
+                    onQuantityChange = onRecipeQuantityChange,
                 )
 
                 state.error?.let { error ->
@@ -399,5 +423,126 @@ private fun ProductImagePicker(
                 }
             }
         }
+    }
+}
+@Composable
+private fun RecipeIngredientsSection(
+    drafts: List<RecipeDraft>,
+    ingredients: List<IngredientEntity>,
+    onAdd: () -> Unit,
+    onRemove: (Int) -> Unit,
+    onIngredientChange: (Int, String?) -> Unit,
+    onQuantityChange: (Int, String) -> Unit,
+    enabled: Boolean,
+) {
+    var pickerFor by remember { mutableStateOf<Int?>(null) }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.mgmt_ingredients_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(vertical = 4.dp),
+        )
+        Text(
+            text = stringResource(R.string.mgmt_ingredients_optional_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+
+        drafts.forEachIndexed { index, draft ->
+            Surface(
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 1.dp,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OutlinedButton(
+                        onClick = { if (enabled) pickerFor = index },
+                        enabled = enabled,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(
+                            text = ingredients
+                                .firstOrNull { it.id == draft.ingredientId }
+                                ?.let { "${it.name} (${it.unit})" }
+                                ?: stringResource(R.string.mgmt_ingredient_picker_hint),
+                            maxLines = 1,
+                        )
+                    }
+                    OutlinedTextField(
+                        value = draft.quantity,
+                        onValueChange = { text ->
+                            if (text.length <= 12 && text.all { it.isDigit() || it == '.' }) {
+                                onQuantityChange(index, text)
+                            }
+                        },
+                        label = { Text(stringResource(R.string.mgmt_quantity)) },
+                        singleLine = true,
+                        enabled = enabled,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.widthIn(min = 96.dp),
+                    )
+                    IconButton(onClick = { if (enabled) onRemove(index) }, enabled = enabled) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = stringResource(R.string.mgmt_remove),
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            }
+        }
+
+        Text(
+            text = stringResource(R.string.mgmt_recipe_empty_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+        if (ingredients.isNotEmpty() && enabled) {
+            OutlinedButton(
+                onClick = onAdd,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(stringResource(R.string.mgmt_add_ingredient)) }
+        }
+    }
+
+    pickerFor?.let { rowIndex ->
+        AlertDialog(
+            onDismissRequest = { pickerFor = null },
+            title = { Text(stringResource(R.string.mgmt_ingredients_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (ingredients.isEmpty()) {
+                        Text(stringResource(R.string.mgmt_no_ingredients))
+                    }
+                    ingredients.forEach { ingredient ->
+                        Surface(
+                            onClick = { onIngredientChange(rowIndex, ingredient.id); pickerFor = null },
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            shape = MaterialTheme.shapes.medium,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = "${ingredient.name} (${ingredient.unit})",
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.padding(14.dp),
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { pickerFor = null }) {
+                    Text(stringResource(R.string.mgmt_cancel))
+                }
+            },
+        )
     }
 }

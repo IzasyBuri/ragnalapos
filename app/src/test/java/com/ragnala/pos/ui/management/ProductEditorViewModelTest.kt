@@ -4,6 +4,7 @@ import com.ragnala.pos.data.db.CategoryEntity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProductEditorViewModelTest {
@@ -109,5 +110,50 @@ class ProductEditorViewModelTest {
         )
         val result = validateProductInput(state, listOf(category))
         assertNotNull(result)
+    }
+
+    @Test
+    fun `recipe build drops incomplete rows and is optional`() {
+        assertTrue(buildRecipeItems("p1", emptyList()).isEmpty())
+        assertTrue(buildRecipeItems("p1", listOf(RecipeDraft())).isEmpty())
+        assertTrue(buildRecipeItems("p1", listOf(RecipeDraft(ingredientId = "i1", quantity = ""))).isEmpty())
+        assertTrue(buildRecipeItems("p1", listOf(RecipeDraft(ingredientId = "i1", quantity = "0"))).isEmpty())
+        assertTrue(buildRecipeItems("p1", listOf(RecipeDraft(ingredientId = "i1", quantity = "-2"))).isEmpty())
+        assertTrue(buildRecipeItems("p1", listOf(RecipeDraft(ingredientId = "i1", quantity = "abc"))).isEmpty())
+    }
+
+    @Test
+    fun `recipe build persists valid rows with productId`() {
+        val items = buildRecipeItems(
+            "p1",
+            listOf(RecipeDraft(ingredientId = "i1", quantity = "18"), RecipeDraft(ingredientId = "i2", quantity = "1.5")),
+        )
+        assertEquals(2, items.size)
+        assertEquals("i1", items[0].ingredientId)
+        assertEquals(18.0, items[0].quantity, 0.0)
+        assertEquals("i2", items[1].ingredientId)
+        assertEquals(1.5, items[1].quantity, 0.0)
+        assertTrue(items.all { it.productId == "p1" })
+    }
+
+    @Test
+    fun `recipe build merges duplicate ingredients by summing quantity`() {
+        val items = buildRecipeItems(
+            "p1",
+            listOf(
+                RecipeDraft(ingredientId = "i1", quantity = "18"),
+                RecipeDraft(ingredientId = "i1", quantity = "2"),
+                RecipeDraft(ingredientId = "i2", quantity = "5"),
+            ),
+        )
+        assertEquals(2, items.size)
+        assertEquals(20.0, items.first { it.ingredientId == "i1" }.quantity, 0.0)
+    }
+
+    @Test
+    fun `quantity formatter shows integers without decimals`() {
+        assertEquals("18", formatQuantity(18.0))
+        assertEquals("1.5", formatQuantity(1.5))
+        assertEquals("0", formatQuantity(0.0))
     }
 }

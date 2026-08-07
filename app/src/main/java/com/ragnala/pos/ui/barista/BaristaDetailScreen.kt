@@ -433,7 +433,7 @@ fun BaristaDetailScreen(
                     }
                     else -> {
                         Text(
-                            stringResource(R.string.barista_status_with, o.status.name),
+                            stringResource(R.string.barista_status_with, orderStatusLabel(o.status)),
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(bottom = 8.dp),
                         )

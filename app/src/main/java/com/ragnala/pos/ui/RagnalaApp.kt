@@ -450,6 +450,7 @@ fun RagnalaApp() {
                     BaristaQueueScreen(
                         viewModel = baristaVm,
                         onOrderClick = { order -> navController.navigate(RagnalaRoutes.baristaDetail(order.id)) },
+                        onManageMenu = { navController.navigate(RagnalaRoutes.PRODUCTS) },
                     )
                 } else {
                     val unlockVm: BaristaUnlockViewModel = viewModel(
@@ -549,6 +550,11 @@ fun RagnalaApp() {
                     onAvailableChange = editorVm::setAvailable,
                     onImagePathChange = editorVm::setImagePath,
                     onToggleGroup = editorVm::toggleGroup,
+                    onAddRecipeRow = editorVm::addRecipeRow,
+                    onRemoveRecipeRow = editorVm::removeRecipeRow,
+                    onRecipeIngredientChange = editorVm::setRecipeIngredient,
+                    onRecipeQuantityChange = editorVm::setRecipeQuantity,
+                    ingredients = editorVm.ingredients.collectAsState().value,
                     onSave = editorVm::save,
                     onSaved = { navController.popBackStack() },
                     onBack = { navController.popBackStack() },
@@ -577,6 +583,11 @@ fun RagnalaApp() {
                     onAvailableChange = editorVm::setAvailable,
                     onImagePathChange = editorVm::setImagePath,
                     onToggleGroup = editorVm::toggleGroup,
+                    onAddRecipeRow = editorVm::addRecipeRow,
+                    onRemoveRecipeRow = editorVm::removeRecipeRow,
+                    onRecipeIngredientChange = editorVm::setRecipeIngredient,
+                    onRecipeQuantityChange = editorVm::setRecipeQuantity,
+                    ingredients = editorVm.ingredients.collectAsState().value,
                     onSave = editorVm::save,
                     onSaved = { navController.popBackStack() },
                     onBack = { navController.popBackStack() },

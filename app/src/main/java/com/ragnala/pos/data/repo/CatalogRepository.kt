@@ -29,6 +29,8 @@ class CatalogRepository(
         productDao.setAvailability(id, available, System.currentTimeMillis())
     suspend fun deleteProduct(product: ProductEntity) = productDao.delete(product)
 
+    fun ingredients(): Flow<List<IngredientEntity>> = ingredientDao.observeAll()
+
     fun modifierGroups(productId: String): Flow<List<ModifierGroupEntity>> =
         modifierDao.groupsForProduct(productId)
     fun allModifierGroups(): Flow<List<ModifierGroupEntity>> = modifierDao.observeAllGroups()
