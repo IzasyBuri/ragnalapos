@@ -43,14 +43,20 @@ class BrowseViewModel(
             if (id == null) catalog.availableProducts()
             else catalog.availableProducts(id)
         }
-        .mapLatest { availableProducts ->
+        .flatMapLatest { availableProducts ->
             // Filter by ingredient stock: only show products that can be made
-            val inStockIds = availableProducts
-                .map { it.id to catalog.isProductInStock(it.id) }
-                .filter { it.second }
-                .map { it.first }
-                .toSet()
-            availableProducts.filter { it.id in inStockIds }
+            // isProductInStock is suspend, so we map each product to a flow of (product, inStock)
+            val stockFlows = availableProducts.map { product ->
+                flowOf(product.id)
+                    .flatMapLatest { id -> flowOf(catalog.isProductInStock(id)) }
+                    .map { inStock -> product to inStock }
+            }
+            if (stockFlows.isEmpty()) flowOf(emptyList())
+            else combine(stockFlows) { pairs ->
+                pairs
+                    .filter { (_, inStock) -> inStock }
+                    .map { (product, _) -> product }
+            }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
