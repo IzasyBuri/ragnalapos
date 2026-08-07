@@ -382,7 +382,6 @@ fun RagnalaApp() {
             ) { entry ->
                 val name = entry.arguments?.getString("name").orEmpty()
                 val items = cartViewModel.items.collectAsState().value
-                val subtotal = cartViewModel.subtotal.collectAsState().value
                 val confirmVm: OrderConfirmViewModel = viewModel(
                     factory = OrderConfirmViewModel.Factory(
                         orderService = AppGraph.orderService(context),
@@ -403,7 +402,6 @@ fun RagnalaApp() {
                 }
                 OrderConfirmScreen(
                     items = items,
-                    subtotal = subtotal,
                     customerName = name,
                     scPercent = scPercent.value,
                     taxPercent = taxPercent.value,

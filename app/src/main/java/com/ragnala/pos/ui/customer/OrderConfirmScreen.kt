@@ -39,7 +39,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ragnala.pos.domain.Money
+import com.ragnala.pos.domain.LineItem
+import com.ragnala.pos.domain.Pricing
 import com.ragnala.pos.ui.customer.CartItem
 import com.ragnala.pos.ui.customer.CartLineCard
 import com.ragnala.pos.ui.customer.formatRupiah
@@ -53,7 +54,6 @@ import com.ragnala.pos.ui.customer.OrderConfirmViewModel
 @Composable
 fun OrderConfirmScreen(
     items: List<CartItem>,
-    subtotal: Long,
     customerName: String,
     scPercent: Double,
     taxPercent: Double,
@@ -62,15 +62,18 @@ fun OrderConfirmScreen(
     result: OrderConfirmViewModel.Result? = null,
     submitting: Boolean = false,
 ) {
-    // scPercent/taxPercent are percentage points (e.g. 5.0 = 5%, 11.0 = 11%) from SettingsService.
-    // Must match OrderService.confirmOrder so the displayed total equals the stored order total.
-    val scDec = scPercent / 100.0
-    val taxDec = taxPercent / 100.0
-
-    val scAmt = Money.roundHalfUp(java.math.BigDecimal(subtotal * scDec))
-    val taxable = subtotal + scAmt
-    val taxAmt = Money.roundHalfUp(java.math.BigDecimal(taxable * taxDec))
-    val total = subtotal + scAmt + taxAmt
+    // Single source of truth: Pricing.calculate is exactly what OrderService.confirmOrder
+    // uses, so the displayed totals always equal the stored order totals. No float multiply
+    // (BigDecimal(subtotal * scDec) can drift by a rupiah for non-round percentages).
+    val totals = Pricing.calculate(
+        items.map { LineItem(it.unitPrice, it.quantity) },
+        scPercent,
+        taxPercent,
+    )
+    val subtotal = totals.subtotal
+    val scAmt = totals.serviceCharge
+    val taxAmt = totals.tax
+    val total = totals.total
 
     Column(modifier = Modifier.fillMaxSize()) {
         // header
