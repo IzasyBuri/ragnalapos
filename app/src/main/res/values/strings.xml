@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ragnala POS</string>
+    <string name="nav_menu">Menu</string>
+    <string name="nav_barista">Barista</string>
+    <string name="nav_manage">Kelola</string>
+</resources>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Browse -->
+    <string name="cust_cart_title">Keranjang Anda</string>
+    <string name="cust_cart_item_count">%1$d item</string>
+    <string name="cust_all">Semua</string>
+    <string name="cust_remove_one">Hapus satu %1$s dari keranjang</string>
+    <string name="cust_add_another">Tambah lagi %1$s ke keranjang</string>
+    <string name="cust_add_to_basket">Tambahkan %1$s ke keranjang</string>
+    <string name="cust_choose_options">Pilih opsi untuk %1$s</string>
+    <string name="cust_menu_brewing">Menu segar sedang disiapkan…</string>
+
+    <!-- Product detail -->
+    <string name="cust_product_not_found">Produk tidak ditemukan</string>
+    <string name="cust_back">Kembali</string>
+    <string name="cust_required_marker">• wajib</string>
+    <string name="cust_choose_up_to">pilih hingga %1$d</string>
+    <string name="cust_add_to_cart">Tambah ke keranjang</string>
+
+    <!-- Cart -->
+    <string name="cust_cart_empty">Keranjang Anda kosong</string>
+    <string name="cust_subtotal_label">Subtotal</string>
+    <string name="cust_continue">Lanjutkan</string>
+
+    <!-- Name -->
+    <string name="cust_name_prompt">Nama apa untuk pesanan ini?</string>
+    <string name="cust_name_field">Nama Anda</string>
+    <string name="cust_name_placeholder">mis. Alex</string>
+    <string name="cust_confirm_order">Konfirmasi pesanan</string>
+
+    <!-- Order confirm -->
+    <string name="cust_subtotal_lbl">Subtotal</string>
+    <string name="cust_service_charge">Biaya layanan (%1$d%%)</string>
+    <string name="cust_tax">Pajak (%1$d%%)</string>
+    <string name="cust_total">Total</string>
+    <string name="cust_order_for">Untuk: %1$s</string>
+    <string name="cust_payment_note">Pembayaran dilakukan di kasir oleh barista.</string>
+    <string name="cust_submitting">Mengirimkan...</string>
+    <string name="cust_submit_order">Kirim pesanan</string>
+    <string name="cust_failed">Gagal: %1$s</string>
+
+    <!-- Thank you -->
+    <string name="cust_order_placed">Pesanan berhasil dibuat!</string>
+    <string name="cust_thank_you_body">Terima kasih telah memesan menu kami!</string>
+    <string name="cust_order_number_note">Pesanan #%1$s\n\nTolong tunjukkan layar ini kepada barista kami untuk melanjutkan.</string>
+    <string name="cust_back_to_menu">Kembali ke menu</string>
+
+</resources>

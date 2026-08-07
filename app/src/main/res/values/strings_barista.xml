@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="barista_back">Kembali</string>
+    <string name="barista_order_title">Pesanan #%1$s</string>
+    <string name="barista_order_not_found">Pesanan tidak ditemukan</string>
+    <string name="barista_customer">Pelanggan</string>
+    <string name="barista_for">Untuk: %1$s</string>
+    <string name="barista_subtotal">Subtotal</string>
+    <string name="barista_service_charge">Biaya layanan</string>
+    <string name="barista_tax">Pajak</string>
+    <string name="barista_total">Total</string>
+    <string name="barista_exact">Tepat</string>
+    <string name="barista_cash_tendered">Uang tunai dibayarkan</string>
+    <string name="barista_amount_less_than">Jumlah kurang dari %1$s</string>
+    <string name="barista_tendered_less_than">Uang %1$s kurang dari total %2$s</string>
+    <string name="barista_pay_cash">Bayar tunai (%1$s)</string>
+    <string name="barista_hide_card_transfer">Sembunyikan kartu / transfer</string>
+    <string name="barista_pay_qris_card_transfer">Bayar dengan QRIS / kartu / transfer</string>
+    <string name="barista_qris_payment_code">Kode pembayaran QRIS</string>
+    <string name="barista_no_qris_image">Gambar QRIS belum diatur. Unggah di Manajemen.</string>
+    <string name="barista_confirm_payment">Konfirmasi pembayaran %1$s %2$s</string>
+    <string name="barista_cancel_order">Batalkan pesanan</string>
+    <string name="barista_paid_change">Dibayar · kembalian %1$s</string>
+    <string name="barista_paid">Dibayar</string>
+    <string name="barista_mark_fulfilled">Tandai selesai</string>
+    <string name="barista_void_order">Void pesanan</string>
+    <string name="barista_fulfilled">Selesai</string>
+    <string name="barista_status_with">Status: %1$s</string>
+    <string name="barista_view_receipt">Lihat struk</string>
+    <string name="barista_back_to_queue">Kembali ke antrean</string>
+    <string name="barista_cancel_order_title">Batalkan pesanan #%1$s</string>
+    <string name="barista_reason_required">Alasan (wajib)</string>
+    <string name="barista_keep_order">Pertahankan pesanan</string>
+    <string name="barista_void_order_title">Void pesanan #%1$s</string>
+    <string name="barista_mode">Mode Barista</string>
+    <string name="barista_active_orders">Pesanan aktif</string>
+    <string name="barista_no_orders_yet">Belum ada pesanan</string>
+    <string name="barista_enter_pin_to_continue">Masukkan PIN untuk melanjutkan</string>
+    <string name="barista_pin">PIN Barista</string>
+    <string name="barista_enter_barista_mode">Masuk Mode Barista</string>
+    <string name="barista_disable_pin_today">Nonaktifkan PIN hari ini</string>
+    <string name="barista_pin_off_today">PIN nonaktif hari ini</string>
+    <string name="barista_require_pin_session">Wajib PIN setiap sesi</string>
+    <string name="barista_owner_pin_required">PIN Pemilik (wajib)</string>
+    <string name="barista_cancel">Batal</string>
+    <string name="barista_confirm">Konfirmasi</string>
+</resources>
