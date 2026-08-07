@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -172,8 +173,8 @@ fun RagnalaApp() {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
-    val cartViewModel: CartViewModel = viewModel()
     val context = LocalContext.current
+    val cartViewModel: CartViewModel = viewModel()
     val scPercent = remember { mutableStateOf(0.05) }
     val taxPercent = remember { mutableStateOf(0.11) }
 

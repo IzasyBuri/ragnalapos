@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.update
 
 /**
  * A line in the customer's cart. Mirrors service.CartLine but keeps the
- * order in memory until the customer confirms (DESIGN.md §Cart).
+ * order in memory until the customer confirms (DESIGN.md ACart).
  */
 data class CartItem(
     val productId: String,
@@ -33,7 +33,8 @@ data class CartModifier(
 
 /**
  * In-memory cart for Customer Mode. No DB writes until order confirmation
- * (OrderService.confirmOrder). Totals computed with [Money] — integer rupiah.
+ * (OrderService.confirmOrder). Totals computed with [Money] - integer rupiah.
+ * Process-death survival via SavedStateHandle is deferred (PRD A17/18).
  */
 class CartViewModel : ViewModel() {
 
@@ -100,11 +101,11 @@ class CartViewModel : ViewModel() {
     /** Subtotal across lines, integer rupiah. */
     val subtotal: StateFlow<Long> = _items
         .map { items -> items.sumOf { Money.lineTotal(it.unitPrice, it.quantity) } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, 0L)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
 
     val itemCount: StateFlow<Int> = _items
         .map { items -> items.sumOf { it.quantity } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 }
 
 internal fun decrementBaseProduct(items: List<CartItem>, productId: String): List<CartItem> {
