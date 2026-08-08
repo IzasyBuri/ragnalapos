@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -79,6 +80,10 @@ fun ProductEditorScreen(
     onAvailableChange: (Boolean) -> Unit,
     onImagePathChange: (String?) -> Unit,
     onToggleGroup: (String) -> Unit = {},
+    onAddCategory: (String, (Boolean) -> Unit) -> Unit = { _, _ -> },
+    onAddModifierGroup: (
+        String, Boolean, Int, Int, List<Pair<String, Long>>, (Boolean) -> Unit,
+    ) -> Unit = { _, _, _, _, _, _ -> },
     onAddRecipeRow: () -> Unit = {},
     onRemoveRecipeRow: (Int) -> Unit = {},
     onRecipeIngredientChange: (Int, String?) -> Unit = { _, _ -> },
@@ -89,6 +94,31 @@ fun ProductEditorScreen(
 ) {
     LaunchedEffect(state.savedProductId) {
         if (state.savedProductId != null) onSaved()
+    }
+
+    var showCategoryDialog by remember { mutableStateOf(false) }
+    var showGroupDialog by remember { mutableStateOf(false) }
+
+    if (showCategoryDialog) {
+        AddCategoryDialog(
+            onConfirm = { name ->
+                onAddCategory(name) { success ->
+                    if (success) showCategoryDialog = false
+                }
+            },
+            onDismiss = { showCategoryDialog = false },
+        )
+    }
+
+    if (showGroupDialog) {
+        AddModifierGroupDialog(
+            onConfirm = { name, required, min, max, options ->
+                onAddModifierGroup(name, required, min, max, options) { success ->
+                    if (success) showGroupDialog = false
+                }
+            },
+            onDismiss = { showGroupDialog = false },
+        )
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -206,10 +236,15 @@ fun ProductEditorScreen(
                                     style = MaterialTheme.typography.bodyLarge,
                                     modifier = Modifier.padding(start = 8.dp),
                                 )
-}
-        }
-    }
-}
+                            }
+                        }
+                    }
+                }
+                OutlinedButton(
+                    onClick = { showCategoryDialog = true },
+                    enabled = !state.saving,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.mgmt_add_category)) }
 
 
                 RagnalaSectionHeader("Menu appearance")
@@ -252,6 +287,7 @@ fun ProductEditorScreen(
                     selectedIds = state.selectedGroupIds,
                     onToggle = onToggleGroup,
                     enabled = !state.saving,
+                    onAddGroup = { showGroupDialog = true },
                 )
 
                 RagnalaSectionHeader("Recipe & Stock")
@@ -291,6 +327,7 @@ private fun ModifierGroupAssignment(
     selectedIds: Set<String>,
     onToggle: (String) -> Unit,
     enabled: Boolean,
+    onAddGroup: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -305,7 +342,6 @@ private fun ModifierGroupAssignment(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            return@Column
         }
         groups.forEach { group ->
             val selected = group.id in selectedIds
@@ -333,7 +369,7 @@ private fun ModifierGroupAssignment(
                             val range = if (group.minSelections == group.maxSelections)
                                 group.minSelections.toString()
                             else "${group.minSelections}-${group.maxSelections}"
-                            append(" Â· ${stringResource(R.string.mgmt_pick_label)} $range")
+                            append(" \u00b7 ${stringResource(R.string.mgmt_pick_label)} $range")
                         }
                         Text(
                             constraint,
@@ -343,6 +379,12 @@ private fun ModifierGroupAssignment(
                     }
                 }
             }
+        }
+        if (enabled) {
+            OutlinedButton(
+                onClick = onAddGroup,
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            ) { Text(stringResource(R.string.mgmt_add_modifier_group)) }
         }
     }
 }
@@ -546,4 +588,165 @@ private fun RecipeIngredientsSection(
             },
         )
     }
+}
+
+@Composable
+private fun AddCategoryDialog(
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.mgmt_add_category)) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(stringResource(R.string.mgmt_category_name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name) },
+                enabled = name.isNotBlank(),
+            ) { Text(stringResource(R.string.mgmt_add)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.mgmt_cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun AddModifierGroupDialog(
+    onConfirm: (String, Boolean, Int, Int, List<Pair<String, Long>>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by remember { mutableStateOf("") }
+    var required by remember { mutableStateOf(false) }
+    var minInput by remember { mutableStateOf("0") }
+    var maxInput by remember { mutableStateOf("1") }
+    var options by remember { mutableStateOf(listOf("" to "")) }
+
+    fun parsedMin(): Int? = minInput.toIntOrNull()
+    fun parsedMax(): Int? = maxInput.toIntOrNull()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.mgmt_add_modifier_group)) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.mgmt_group_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.mgmt_group_required),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Switch(checked = required, onCheckedChange = { required = it })
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = minInput,
+                        onValueChange = { text -> if (text.length <= 3 && text.all(Char::isDigit)) minInput = text },
+                        label = { Text(stringResource(R.string.mgmt_group_min)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                    )
+                    OutlinedTextField(
+                        value = maxInput,
+                        onValueChange = { text -> if (text.length <= 3 && text.all(Char::isDigit)) maxInput = text },
+                        label = { Text(stringResource(R.string.mgmt_group_max)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.mgmt_group_options),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+                options.forEachIndexed { index, (optionName, optionPrice) ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(
+                            value = optionName,
+                            onValueChange = { value ->
+                                options = options.toMutableList().also { it[index] = value to optionPrice }
+                            },
+                            label = { Text(stringResource(R.string.mgmt_option_name)) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        OutlinedTextField(
+                            value = optionPrice,
+                            onValueChange = { value ->
+                                if (value.length <= 10 && value.all { it.isDigit() || it == '-' }) {
+                                    options = options.toMutableList().also { it[index] = optionName to value }
+                                }
+                            },
+                            label = { Text(stringResource(R.string.mgmt_option_price)) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f),
+                        )
+                        IconButton(
+                            onClick = {
+                                if (options.size > 1) {
+                                    options = options.filterIndexed { i, _ -> i != index }
+                                }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = stringResource(R.string.mgmt_remove),
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
+                TextButton(
+                    onClick = { options = options + ("" to "") },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.mgmt_add_option)) }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val min = parsedMin() ?: 0
+                    val max = parsedMax() ?: 1
+                    val parsedOptions = options.mapNotNull { (optionName, optionPrice) ->
+                        val trimmedName = optionName.trim()
+                        if (trimmedName.isEmpty()) return@mapNotNull null
+                        val price = if (optionPrice.isBlank()) 0L
+                        else optionPrice.trim().removePrefix("-").toLongOrNull()?.let { if (optionPrice.trim().startsWith("-")) -it else it }
+                        if (price == null) null else trimmedName to price
+                    }
+                    onConfirm(name, required, min, max, parsedOptions)
+                },
+                enabled = name.isNotBlank() &&
+                    (minInput.toIntOrNull() ?: 0) >= 0 &&
+                    (minInput.toIntOrNull() ?: 0) <= (maxInput.toIntOrNull() ?: 0) &&
+                    options.any { it.first.isNotBlank() && it.second.all { c -> c.isDigit() || c == '-' } },
+            ) { Text(stringResource(R.string.mgmt_add)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.mgmt_cancel)) }
+        },
+    )
 }

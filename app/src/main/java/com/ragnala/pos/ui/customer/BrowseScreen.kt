@@ -566,13 +566,19 @@ private fun QuickAddControl(
                     description = stringResource(R.string.cust_remove_one, productName),
                     onClick = onRemove,
                 )
-                Text(
-                    text = quantity.toString(),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.widthIn(min = 32.dp),
-                )
+                Box(
+                    modifier = Modifier
+                        .widthIn(min = 36.dp)
+                        .height(48.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = quantity.toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                    )
+                }
                 QuantityControlButton(
                     icon = Icons.Rounded.Add,
                     description = stringResource(R.string.cust_add_another, productName),

@@ -19,6 +19,7 @@ class CatalogRepository(
     private val ingredientDao: IngredientDao,
 ) {
     fun categories(): Flow<List<CategoryEntity>> = categoryDao.observeAll()
+    suspend fun saveCategory(category: CategoryEntity) = categoryDao.upsert(category)
     fun products(): Flow<List<ProductEntity>> = productDao.observeAll()
     fun availableProducts(categoryId: String): Flow<List<ProductEntity>> =
         productDao.observeAvailableInCategory(categoryId)

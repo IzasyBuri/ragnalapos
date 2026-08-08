@@ -124,7 +124,7 @@ private fun ProductListSummary(rows: List<ProductListRow>) {
         Text(
             text = buildString {
                 append("${rows.size} ${stringResource(R.string.mgmt_product)}")
-                if (unavailableCount > 0) append(" Â· $unavailableCount ${stringResource(R.string.mgmt_unavailable)}")
+                if (unavailableCount > 0) append(" \u00b7 $unavailableCount ${stringResource(R.string.mgmt_unavailable)}")
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

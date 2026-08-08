@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.ragnala.pos.data.db.CategoryEntity
 import com.ragnala.pos.data.db.IngredientEntity
 import com.ragnala.pos.data.db.ModifierGroupEntity
+import com.ragnala.pos.data.db.ModifierOptionEntity
 import com.ragnala.pos.data.db.ProductEntity
 import com.ragnala.pos.data.db.RecipeItemEntity
 import com.ragnala.pos.data.repo.CatalogRepository
@@ -79,6 +80,108 @@ class ProductEditorViewModel(private val catalog: CatalogRepository) : ViewModel
                 selectedGroupIds + groupId
             },
         )
+    }
+
+    /** Create a new category and select it for this product. Duplicate names (case-insensitive) are rejected. */
+    fun createCategory(name: String, onResult: (Boolean) -> Unit = {}) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) {
+            _state.value = _state.value.copy(error = "Category name is required.")
+            onResult(false)
+            return
+        }
+        if (categories.value.any { it.name.equals(trimmed, ignoreCase = true) }) {
+            _state.value = _state.value.copy(error = "Category already exists.")
+            onResult(false)
+            return
+        }
+        viewModelScope.launch {
+            runCatching {
+                val now = System.currentTimeMillis()
+                val nextPosition = (categories.value.maxOfOrNull { it.position } ?: -1) + 1
+                val category = CategoryEntity(
+                    id = UUID.randomUUID().toString(),
+                    name = trimmed,
+                    position = nextPosition,
+                    createdAt = now,
+                    updatedAt = now,
+                )
+                catalog.saveCategory(category)
+                category.id
+            }.onSuccess { id ->
+                _state.value = _state.value.copy(error = null)
+                setCategory(id)
+                onResult(true)
+            }.onFailure {
+                _state.value = _state.value.copy(error = "Could not save category. Please try again.")
+                onResult(false)
+            }
+        }
+    }
+
+    /** Create a new modifier group (with options) and assign it to this product. */
+    fun createModifierGroup(
+        name: String,
+        required: Boolean,
+        minSelections: Int,
+        maxSelections: Int,
+        options: List<Pair<String, Long>>,
+        onResult: (Boolean) -> Unit = {},
+    ) {
+        val trimmed = name.trim()
+        val validOptions = options.mapNotNull { (optionName, delta) ->
+            optionName.trim().takeIf { it.isNotEmpty() }?.let { it to delta }
+        }
+        if (trimmed.isEmpty()) {
+            _state.value = _state.value.copy(error = "Group name is required.")
+            onResult(false)
+            return
+        }
+        if (minSelections < 0 || maxSelections < minSelections) {
+            _state.value = _state.value.copy(error = "Check the min/max selection values.")
+            onResult(false)
+            return
+        }
+        if (validOptions.isEmpty()) {
+            _state.value = _state.value.copy(error = "Add at least one option.")
+            onResult(false)
+            return
+        }
+        viewModelScope.launch {
+            runCatching {
+                val nextPosition = (allGroups.value.maxOfOrNull { it.position } ?: -1) + 1
+                val groupId = UUID.randomUUID().toString()
+                catalog.saveModifierGroup(
+                    ModifierGroupEntity(
+                        id = groupId,
+                        name = trimmed,
+                        required = required,
+                        minSelections = minSelections,
+                        maxSelections = maxSelections,
+                        position = nextPosition,
+                    ),
+                )
+                validOptions.forEachIndexed { index, (optionName, delta) ->
+                    catalog.saveModifierOption(
+                        ModifierOptionEntity(
+                            id = UUID.randomUUID().toString(),
+                            groupId = groupId,
+                            name = optionName,
+                            priceDelta = delta,
+                            position = index,
+                        ),
+                    )
+                }
+                groupId
+            }.onSuccess { groupId ->
+                _state.value = _state.value.copy(error = null)
+                toggleGroup(groupId)
+                onResult(true)
+            }.onFailure {
+                _state.value = _state.value.copy(error = "Could not save modifier group. Please try again.")
+                onResult(false)
+            }
+        }
     }
 
     /** Recipe editor (optional): an ingredient for every menu item. */
