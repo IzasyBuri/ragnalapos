@@ -23,6 +23,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -272,16 +274,16 @@ private fun ModifierOptionRow(
 @Composable
 private fun QuantityStepper(quantity: Int, onQuantityChange: (Int) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        QuantityButton("−", "Decrease quantity") { onQuantityChange((quantity - 1).coerceAtLeast(1)) }
+        QuantityButton(Icons.Rounded.Remove, "Decrease quantity") { onQuantityChange((quantity - 1).coerceAtLeast(1)) }
         Text(quantity.toString(), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = RagnalaSpacing.sm))
-        QuantityButton("+", "Increase quantity") { onQuantityChange(quantity + 1) }
+        QuantityButton(Icons.Rounded.Add, "Increase quantity") { onQuantityChange(quantity + 1) }
     }
 }
 
 @Composable
-private fun QuantityButton(label: String, description: String, onClick: () -> Unit) {
+private fun QuantityButton(icon: androidx.compose.ui.graphics.vector.ImageVector, description: String, onClick: () -> Unit) {
     Surface(onClick = onClick, shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(48.dp).semantics { contentDescription = description }) {
-        Box(contentAlignment = Alignment.Center) { Text(label, style = MaterialTheme.typography.titleLarge) }
+        Box(contentAlignment = Alignment.Center) { Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp)) }
     }
 }
 

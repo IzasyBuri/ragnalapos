@@ -19,6 +19,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material3.Icon
@@ -33,6 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -106,9 +110,9 @@ internal fun CartLineCard(item: CartItem, onDecrease: () -> Unit, onIncrease: ()
                 IconButton(onClick = onRemove, modifier = Modifier.size(48.dp)) { Icon(Icons.Outlined.DeleteOutline, contentDescription = "Remove ${item.productName}", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
             Row(Modifier.fillMaxWidth().padding(top = RagnalaSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                QuantityButton("−", "Decrease ${item.productName}", onDecrease)
+                QuantityButton(Icons.Rounded.Remove, "Decrease ${item.productName}", onDecrease)
                 Text(item.quantity.toString(), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = RagnalaSpacing.sm))
-                QuantityButton("+", "Increase ${item.productName}", onIncrease)
+                QuantityButton(Icons.Rounded.Add, "Increase ${item.productName}", onIncrease)
                 Spacer(Modifier.weight(1f))
                 RagnalaMoneyText(item.unitPrice * item.quantity, size = RagnalaMoneySize.Medium, color = MaterialTheme.colorScheme.primary)
             }
@@ -117,8 +121,8 @@ internal fun CartLineCard(item: CartItem, onDecrease: () -> Unit, onIncrease: ()
 }
 
 @Composable
-private fun QuantityButton(label: String, description: String, onClick: () -> Unit) {
-    Surface(onClick = onClick, shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(48.dp)) {
-        Box(contentAlignment = Alignment.Center) { Text(label, style = MaterialTheme.typography.titleLarge) }
+private fun QuantityButton(icon: androidx.compose.ui.graphics.vector.ImageVector, description: String, onClick: () -> Unit) {
+    Surface(onClick = onClick, shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(48.dp).semantics { contentDescription = description }) {
+        Box(contentAlignment = Alignment.Center) { Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp)) }
     }
 }

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -30,6 +31,9 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -174,6 +178,7 @@ private fun CartBar(
         shadowElevation = 1.dp,
         modifier = modifier
             .padding(horizontal = RagnalaSpacing.md, vertical = RagnalaSpacing.xs)
+            .navigationBarsPadding()
             .heightIn(min = 68.dp)
             .clickable(onClick = onClick),
     ) {
@@ -360,8 +365,8 @@ private fun ProductList(
     }
     LazyColumn(
         modifier = modifier,
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(start = RagnalaSpacing.md, top = RagnalaSpacing.md, end = RagnalaSpacing.md, bottom = RagnalaSpacing.xxxl + RagnalaSpacing.xxl),
+        verticalArrangement = Arrangement.spacedBy(RagnalaSpacing.sm),
     ) {
         items(products, key = { it.id }) { product ->
             val canQuickAdd = product.id in quickAddEligibleProductIds
@@ -396,7 +401,7 @@ private fun ProductGrid(
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 220.dp),
         modifier = modifier,
-        contentPadding = PaddingValues(RagnalaSpacing.md),
+        contentPadding = PaddingValues(start = RagnalaSpacing.md, top = RagnalaSpacing.md, end = RagnalaSpacing.md, bottom = RagnalaSpacing.xxxl + RagnalaSpacing.xxl),
         horizontalArrangement = Arrangement.spacedBy(RagnalaSpacing.md),
         verticalArrangement = Arrangement.spacedBy(RagnalaSpacing.md),
     ) {
@@ -557,7 +562,7 @@ private fun QuickAddControl(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 QuantityControlButton(
-                    label = "âˆ’",
+                    icon = Icons.Rounded.Remove,
                     description = stringResource(R.string.cust_remove_one, productName),
                     onClick = onRemove,
                 )
@@ -569,7 +574,7 @@ private fun QuickAddControl(
                     modifier = Modifier.widthIn(min = 32.dp),
                 )
                 QuantityControlButton(
-                    label = "+",
+                    icon = Icons.Rounded.Add,
                     description = stringResource(R.string.cust_add_another, productName),
                     onClick = onAdd,
                 )
@@ -577,7 +582,7 @@ private fun QuickAddControl(
         }
     } else {
         QuantityControlButton(
-            label = "+",
+            icon = Icons.Rounded.Add,
             description = if (canQuickAdd) {
                 stringResource(R.string.cust_add_to_basket, productName)
             } else {
@@ -590,7 +595,7 @@ private fun QuickAddControl(
 
 @Composable
 private fun QuantityControlButton(
-    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     description: String,
     onClick: () -> Unit,
 ) {
@@ -604,10 +609,10 @@ private fun QuantityControlButton(
             .semantics { contentDescription = description },
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+            androidx.compose.material3.Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
             )
         }
     }

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -213,6 +214,7 @@ fun RagnalaTopBar(
         Row(
             modifier = modifier
                 .fillMaxWidth()
+                .statusBarsPadding()
                 .defaultMinSize(minHeight = 64.dp)
                 .padding(horizontal = RagnalaSpacing.md, vertical = RagnalaSpacing.xs),
             verticalAlignment = Alignment.CenterVertically,
