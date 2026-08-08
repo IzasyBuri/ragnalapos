@@ -37,6 +37,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -111,7 +112,16 @@ internal fun CartLineCard(item: CartItem, onDecrease: () -> Unit, onIncrease: ()
             }
             Row(Modifier.fillMaxWidth().padding(top = RagnalaSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
                 QuantityButton(Icons.Rounded.Remove, "Decrease ${item.productName}", onDecrease)
-                Text(item.quantity.toString(), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = RagnalaSpacing.sm))
+                Box(
+                    modifier = Modifier.width(40.dp).height(48.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        item.quantity.toString(),
+                        style = MaterialTheme.typography.titleLarge,
+                        textAlign = TextAlign.Center,
+                    )
+                }
                 QuantityButton(Icons.Rounded.Add, "Increase ${item.productName}", onIncrease)
                 Spacer(Modifier.weight(1f))
                 RagnalaMoneyText(item.unitPrice * item.quantity, size = RagnalaMoneySize.Medium, color = MaterialTheme.colorScheme.primary)
@@ -123,6 +133,6 @@ internal fun CartLineCard(item: CartItem, onDecrease: () -> Unit, onIncrease: ()
 @Composable
 private fun QuantityButton(icon: androidx.compose.ui.graphics.vector.ImageVector, description: String, onClick: () -> Unit) {
     Surface(onClick = onClick, shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(48.dp).semantics { contentDescription = description }) {
-        Box(contentAlignment = Alignment.Center) { Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp)) }
+        Box(contentAlignment = Alignment.Center) { Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp)) }
     }
 }

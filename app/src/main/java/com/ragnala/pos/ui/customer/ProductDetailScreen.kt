@@ -52,6 +52,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -275,7 +276,16 @@ private fun ModifierOptionRow(
 private fun QuantityStepper(quantity: Int, onQuantityChange: (Int) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         QuantityButton(Icons.Rounded.Remove, "Decrease quantity") { onQuantityChange((quantity - 1).coerceAtLeast(1)) }
-        Text(quantity.toString(), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = RagnalaSpacing.sm))
+        Box(
+            modifier = Modifier.width(40.dp).height(48.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                quantity.toString(),
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center,
+            )
+        }
         QuantityButton(Icons.Rounded.Add, "Increase quantity") { onQuantityChange(quantity + 1) }
     }
 }
@@ -283,7 +293,7 @@ private fun QuantityStepper(quantity: Int, onQuantityChange: (Int) -> Unit) {
 @Composable
 private fun QuantityButton(icon: androidx.compose.ui.graphics.vector.ImageVector, description: String, onClick: () -> Unit) {
     Surface(onClick = onClick, shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(48.dp).semantics { contentDescription = description }) {
-        Box(contentAlignment = Alignment.Center) { Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp)) }
+        Box(contentAlignment = Alignment.Center) { Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp)) }
     }
 }
 

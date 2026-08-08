@@ -568,7 +568,7 @@ private fun QuickAddControl(
                 )
                 Box(
                     modifier = Modifier
-                        .widthIn(min = 36.dp)
+                        .width(40.dp)
                         .height(48.dp),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -618,7 +618,7 @@ private fun QuantityControlButton(
             androidx.compose.material3.Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(22.dp),
             )
         }
     }
