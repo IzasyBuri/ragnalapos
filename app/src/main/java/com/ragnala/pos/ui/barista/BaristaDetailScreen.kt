@@ -10,6 +10,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -30,6 +31,15 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.layout.BoxWithConstraints
+import com.ragnala.pos.ui.components.RagnalaMoneySize
+import com.ragnala.pos.ui.components.RagnalaMoneyText
+import com.ragnala.pos.ui.components.RagnalaPrimaryButton
+import com.ragnala.pos.ui.components.RagnalaSecondaryButton
+import com.ragnala.pos.ui.components.RagnalaStatusBadge
+import com.ragnala.pos.ui.components.RagnalaBadgeTone
+import com.ragnala.pos.ui.theme.RagnalaRadius
+import com.ragnala.pos.ui.theme.RagnalaSpacing
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -234,13 +244,14 @@ fun BaristaDetailScreen(
         // Bottom action panel â€” driven by live order status
         Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 4.dp) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                // Cozy quest progress: Order(1) â†’ Paid(2)
-                val step = when (o.status) {
-                    OrderStatus.WAITING_PAYMENT -> 1
-                    OrderStatus.PAID, OrderStatus.FULFILLED -> 2
-                    else -> 2
+                val statusTone = when (o.status) {
+                    OrderStatus.WAITING_PAYMENT -> RagnalaBadgeTone.Warning
+                    OrderStatus.PAID -> RagnalaBadgeTone.Success
+                    OrderStatus.FULFILLED -> RagnalaBadgeTone.Neutral
+                    OrderStatus.CANCELLED, OrderStatus.VOIDED -> RagnalaBadgeTone.Error
+                    else -> RagnalaBadgeTone.Neutral
                 }
-                OrderProgressBar(currentStep = step, modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp))
+                RagnalaStatusBadge(orderStatusLabel(o.status), statusTone, Modifier.padding(bottom = RagnalaSpacing.sm))
                 error?.let {
                     Text(
                         it,
@@ -301,7 +312,8 @@ fun BaristaDetailScreen(
                             formatRupiah(tendered),
                             formatRupiah(total),
                         )
-                        Button(
+                        RagnalaPrimaryButton(
+                            text = stringResource(R.string.barista_pay_cash, formatRupiah(tendered)),
                             onClick = {
                                 if (tendered < total) {
                                     viewModel.showError(tenderedLessThanTotal)
@@ -313,53 +325,31 @@ fun BaristaDetailScreen(
                                     )
                                 }
                             },
-                            enabled = tenderedRaw.isNotEmpty(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                            ),
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        ) {
-                            Text(stringResource(R.string.barista_pay_cash, formatRupiah(tendered)))
-                        }
-                        TextButton(
-                            onClick = { nonCashMode = !nonCashMode },
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                        ) {
-                            Text(
-                                if (nonCashMode) {
-                                    stringResource(R.string.barista_hide_card_transfer)
-                                } else {
-                                    stringResource(R.string.barista_pay_qris_card_transfer)
-                                },
-                            )
-                        }
-                        if (nonCashMode) {
-                            // Audit M7: QRIS, Debit card, Credit card, Bank transfer.
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState())
-                                    .padding(top = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                NON_CASH_METHODS.forEach { m ->
-                                    FilterChip(
-                                        selected = selectedMethod == m,
-                                        onClick = { selectedMethod = m },
-                                        label = { Text(paymentMethodLabel(m)) },
-                                    )
+                             enabled = tenderedRaw.isNotEmpty(),
+                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                         )
+                        PaymentMethodSelector(
+                            selectedMethod = if (nonCashMode) selectedMethod else "CASH",
+                            onMethodSelected = { method ->
+                                if (method == "CASH") nonCashMode = false
+                                else {
+                                    nonCashMode = true
+                                    selectedMethod = method
                                 }
-                            }
-                            // Owner-configured QRIS image (set in Management) â€” show it for the customer to scan.
+                            },
+                            modifier = Modifier.padding(top = RagnalaSpacing.md),
+                        )
+                        if (nonCashMode) {
+                            // Owner-configured QRIS image (set in Management) — show it for the customer to scan.
                             if (selectedMethod == "QRIS") {
                                 qrisBitmap?.let { bmp ->
-                                    Image(
-                                        bitmap = bmp.asImageBitmap(),
-                                        contentDescription = stringResource(R.string.barista_qris_payment_code),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(top = 12.dp),
-                                    )
+                                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                        Image(
+                                            bitmap = bmp.asImageBitmap(),
+                                            contentDescription = stringResource(R.string.barista_qris_payment_code),
+                                            modifier = Modifier.size(280.dp).padding(top = RagnalaSpacing.sm),
+                                        )
+                                    }
                                 } ?: Text(
                                     stringResource(R.string.barista_no_qris_image),
                                     style = MaterialTheme.typography.bodyMedium,
@@ -393,9 +383,8 @@ fun BaristaDetailScreen(
                     OrderStatus.PAID -> {
                         if (paid) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                CoinDrop(modifier = Modifier.size(40.dp))
-                                Text(
-                                    stringResource(R.string.barista_paid_change, formatRupiah((tendered.coerceAtLeast(total)) - total)),
+                                 Text(
+                                     stringResource(R.string.barista_paid_change, formatRupiah((tendered.coerceAtLeast(total)) - total)),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.primary,
@@ -523,6 +512,27 @@ fun BaristaDetailScreen(
 /** Master list of supported non-cash payment methods. Stable order for UI chips (M7). */
 private val NON_CASH_METHODS = listOf("QRIS", "DEBIT", "CREDIT_CARD", "BANK_TRANSFER")
 
+@Composable
+private fun PaymentMethodSelector(
+    selectedMethod: String,
+    onMethodSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(RagnalaSpacing.xs)) {
+        Text("Payment method", style = MaterialTheme.typography.titleMedium)
+        Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(RagnalaSpacing.xs)) {
+            (listOf("CASH") + NON_CASH_METHODS).forEach { method ->
+                FilterChip(
+                    selected = selectedMethod == method,
+                    onClick = { onMethodSelected(method) },
+                    label = { Text(if (method == "CASH") "Cash" else paymentMethodLabel(method)) },
+                    modifier = Modifier.heightIn(min = 48.dp),
+                )
+            }
+        }
+    }
+}
+
 /** Human-readable label for a payment method enum value (M7). */
 private fun paymentMethodLabel(method: String): String = when (method) {
     "QRIS" -> "QRIS"
@@ -534,12 +544,7 @@ private fun paymentMethodLabel(method: String): String = when (method) {
 
 @Composable
 private fun StatusButton(text: String, onClick: () -> Unit) {
-    TextButton(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-    ) {
-        Text(text)
-    }
+    RagnalaPrimaryButton(text = text, onClick = onClick, modifier = Modifier.fillMaxWidth().padding(top = RagnalaSpacing.sm).heightIn(min = 52.dp))
 }
 
 @Composable
