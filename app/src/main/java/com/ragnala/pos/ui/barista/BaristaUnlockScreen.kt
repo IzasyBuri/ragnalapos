@@ -3,18 +3,17 @@
 import com.ragnala.pos.R
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,147 +25,65 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ragnala.pos.ui.components.RagnalaCard
+import com.ragnala.pos.ui.components.RagnalaPrimaryButton
+import com.ragnala.pos.ui.components.RagnalaSecondaryButton
+import com.ragnala.pos.ui.components.RagnalaTopBar
+import com.ragnala.pos.ui.theme.RagnalaSpacing
 
-/**
- * Shown the first time Barista Mode is opened in a session (or whenever the
- * session is locked). Enter the barista PIN once to unlock the whole session.
- * Owners may disable the PIN for the current day via the toggle (owner-PIN gated).
- */
 @Composable
-fun BaristaUnlockScreen(
-    viewModel: BaristaUnlockViewModel,
-    onUnlocked: () -> Unit,
-) {
+fun BaristaUnlockScreen(viewModel: BaristaUnlockViewModel, onUnlocked: () -> Unit) {
     val pin by viewModel.pin.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val pinDisabledToday by viewModel.pinDisabledToday.collectAsStateWithLifecycle()
     val unlocked by viewModel.unlocked.collectAsStateWithLifecycle()
-
-    // Owner-PIN sheet state for the disable toggle
     var ownerPin by remember { mutableStateOf("") }
-    var ownerSheetOpen by remember { mutableStateOf(false) }
+    var ownerOptionsOpen by remember { mutableStateOf(false) }
 
-    // Once unlocked, hand control back to the host (which navigates into the queue).
-    LaunchedEffect(unlocked) {
-        if (unlocked) onUnlocked()
-    }
+    LaunchedEffect(unlocked) { if (unlocked) onUnlocked() }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = stringResource(R.string.barista_mode),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-        )
-        Text(
-            text = stringResource(R.string.barista_enter_pin_to_continue),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        OutlinedTextField(
-            value = pin,
-            onValueChange = viewModel::onPinChange,
-            label = { Text(stringResource(R.string.barista_pin)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-            isError = error != null,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        if (error != null) {
-            Text(
-                text = error ?: "",
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = { viewModel.tryUnlock() },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            shape = MaterialTheme.shapes.medium,
-        ) {
-            Text(stringResource(R.string.barista_enter_barista_mode), fontSize = 16.sp)
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Owner convenience: disable PIN for today
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.barista_disable_pin_today),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                )
-                Text(
-                    text = if (pinDisabledToday) {
-                        stringResource(R.string.barista_pin_off_today)
-                    } else {
-                        stringResource(R.string.barista_require_pin_session)
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Switch(
-                checked = pinDisabledToday,
-                onCheckedChange = {
-                    if (pinDisabledToday) {
-                        // turning OFF the exemption -> ask owner PIN
-                        ownerSheetOpen = true
-                    } else {
-                        // turning ON the exemption -> ask owner PIN
-                        ownerSheetOpen = true
+    Column {
+        RagnalaTopBar(title = "Barista access")
+        BoxWithConstraints {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(RagnalaSpacing.lg),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(RagnalaSpacing.md),
+            ) {
+                Column(modifier = Modifier.widthIn(max = 440.dp), verticalArrangement = Arrangement.spacedBy(RagnalaSpacing.md)) {
+                    Text("Ragnala POS", style = MaterialTheme.typography.headlineSmall)
+                    Text("Enter your staff PIN to continue.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedTextField(
+                        value = pin,
+                        onValueChange = viewModel::onPinChange,
+                        label = { Text(stringResource(R.string.barista_pin)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        isError = error != null,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                    )
+                    error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
+                    RagnalaPrimaryButton("Unlock", { viewModel.tryUnlock() }, enabled = pin.length >= 4, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp))
+                    RagnalaCard(contentPadding = RagnalaSpacing.md) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Owner options", style = MaterialTheme.typography.titleMedium)
+                                Text(if (pinDisabledToday) stringResource(R.string.barista_pin_off_today) else stringResource(R.string.barista_require_pin_session), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(checked = pinDisabledToday, onCheckedChange = { ownerOptionsOpen = true })
+                        }
+                        if (ownerOptionsOpen) {
+                            OutlinedTextField(value = ownerPin, onValueChange = { ownerPin = it.filter(Char::isDigit).take(6) }, label = { Text(stringResource(R.string.barista_owner_pin_required)) }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword), modifier = Modifier.fillMaxWidth().padding(top = RagnalaSpacing.sm))
+                            Row(Modifier.fillMaxWidth().padding(top = RagnalaSpacing.sm), horizontalArrangement = Arrangement.spacedBy(RagnalaSpacing.sm)) {
+                                RagnalaSecondaryButton("Cancel", { ownerPin = ""; ownerOptionsOpen = false; viewModel.clearError() }, modifier = Modifier.weight(1f))
+                                RagnalaPrimaryButton("Verify", { viewModel.togglePinDisabledForToday(ownerPin); ownerPin = "" }, enabled = ownerPin.length >= 4, modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
-                },
-            )
-        }
-
-        if (ownerSheetOpen) {
-            Spacer(modifier = Modifier.height(12.dp))
-            OutlinedTextField(
-                value = ownerPin,
-                onValueChange = { ownerPin = it.filter { c -> c.isDigit() }.take(6) },
-                label = { Text(stringResource(R.string.barista_owner_pin_required)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = {
-                    ownerPin = ""
-                    ownerSheetOpen = false
-                    viewModel.clearError()
-                }) { Text(stringResource(R.string.barista_cancel)) }
-                Button(onClick = {
-                    viewModel.togglePinDisabledForToday(ownerPin)
-                    ownerPin = ""
-                    ownerSheetOpen = false
-                }) { Text(stringResource(R.string.barista_confirm)) }
+                }
             }
         }
     }

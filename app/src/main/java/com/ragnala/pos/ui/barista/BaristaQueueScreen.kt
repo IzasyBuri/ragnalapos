@@ -4,92 +4,59 @@ import com.ragnala.pos.R
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.collectAsState
 import com.ragnala.pos.data.db.OrderEntity
 import com.ragnala.pos.domain.OrderStatus
-import com.ragnala.pos.ui.customer.formatRupiah
-import com.ragnala.pos.ui.theme.SteamWisp
+import com.ragnala.pos.ui.components.RagnalaEmptyState
+import com.ragnala.pos.ui.components.RagnalaMoneySize
+import com.ragnala.pos.ui.components.RagnalaMoneyText
+import com.ragnala.pos.ui.components.RagnalaSecondaryButton
+import com.ragnala.pos.ui.components.RagnalaSectionHeader
+import com.ragnala.pos.ui.components.RagnalaStatusBadge
+import com.ragnala.pos.ui.components.RagnalaBadgeTone
+import com.ragnala.pos.ui.theme.RagnalaRadius
+import com.ragnala.pos.ui.theme.RagnalaSpacing
 
-/**
- * Barista Mode â€” live queue of active orders (waiting payment â†’ paid â†’ preparing â†’ ready).
- * Tap a card to open detail and act on it.
- */
 @Composable
-fun BaristaQueueScreen(
-    viewModel: BaristaQueueViewModel,
-    onOrderClick: (OrderEntity) -> Unit = {},
-    onManageMenu: () -> Unit = {},
-) {
+fun BaristaQueueScreen(viewModel: BaristaQueueViewModel, onOrderClick: (OrderEntity) -> Unit = {}, onManageMenu: () -> Unit = {}) {
     val orders by viewModel.activeOrders.collectAsState()
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        Surface(
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 2.dp,
-        ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.barista_mode),
-                            style = MaterialTheme.typography.titleLarge,
-                        )
-                        Text(
-                            text = stringResource(R.string.barista_active_orders),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    OutlinedButton(onClick = onManageMenu) {
-                        Text(stringResource(R.string.mgmt_manage_menu))
-                    }
-                }
-            }
-        }
-
+    Column(Modifier.fillMaxSize().padding(horizontal = RagnalaSpacing.md)) {
+        RagnalaSectionHeader(
+            title = "Orders",
+            subtitle = "Active orders",
+            modifier = Modifier.padding(vertical = RagnalaSpacing.md),
+            trailing = { RagnalaSecondaryButton("Manage menu", onManageMenu) },
+        )
         if (orders.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.barista_no_orders_yet),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
+            RagnalaEmptyState("All caught up", "No active orders right now.", Modifier.fillMaxSize())
         } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(orders, key = { it.id }) { order ->
-                    OrderQueueCard(order = order, onClick = { onOrderClick(order) })
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                if (maxWidth >= 600.dp) {
+                    LazyVerticalGrid(GridCells.Adaptive(minSize = 290.dp), contentPadding = PaddingValues(bottom = RagnalaSpacing.lg), horizontalArrangement = Arrangement.spacedBy(RagnalaSpacing.md), verticalArrangement = Arrangement.spacedBy(RagnalaSpacing.md)) {
+                        items(orders, key = { it.id }) { order -> OrderQueueCard(order, { onOrderClick(order) }) }
+                    }
+                } else {
+                    LazyColumn(contentPadding = PaddingValues(bottom = RagnalaSpacing.lg), verticalArrangement = Arrangement.spacedBy(RagnalaSpacing.sm)) {
+                        items(orders, key = { it.id }) { order -> OrderQueueCard(order, { onOrderClick(order) }) }
+                    }
                 }
             }
         }
@@ -106,37 +73,22 @@ internal fun orderStatusLabel(status: OrderStatus): String = when (status) {
 
 @Composable
 private fun OrderQueueCard(order: OrderEntity, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 2.dp,
-        shape = MaterialTheme.shapes.medium,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                val label = order.customerName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.barista_customer)
-                Text(
-                    text = "#${order.orderNumber} Â· $label",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = orderStatusLabel(order.status),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+    androidx.compose.material3.Surface(onClick = onClick, color = MaterialTheme.colorScheme.surface, shape = androidx.compose.foundation.shape.RoundedCornerShape(RagnalaRadius.card), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(RagnalaSpacing.md), verticalArrangement = Arrangement.spacedBy(RagnalaSpacing.sm)) {
+            androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("#${order.orderNumber.toString().padStart(3, '0')}", style = MaterialTheme.typography.headlineSmall)
+                RagnalaStatusBadge(orderStatusLabel(order.status), order.status.tone())
             }
-            Text(
-                text = formatRupiah(order.total),
-                style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
-                fontWeight = FontWeight.SemiBold,
-            )
-            if (order.status != OrderStatus.WAITING_PAYMENT) {
-                SteamWisp(modifier = Modifier.size(28.dp, 40.dp))
-            }
+            Text(order.customerName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.barista_customer), style = MaterialTheme.typography.titleMedium)
+            RagnalaMoneyText(order.total, size = RagnalaMoneySize.Medium, color = MaterialTheme.colorScheme.primary)
         }
     }
+}
+
+private fun OrderStatus.tone(): RagnalaBadgeTone = when (this) {
+    OrderStatus.WAITING_PAYMENT -> RagnalaBadgeTone.Warning
+    OrderStatus.PAID -> RagnalaBadgeTone.Success
+    OrderStatus.FULFILLED -> RagnalaBadgeTone.Neutral
+    OrderStatus.CANCELLED, OrderStatus.VOIDED -> RagnalaBadgeTone.Error
+    else -> RagnalaBadgeTone.Neutral
 }
