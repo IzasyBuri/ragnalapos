@@ -104,13 +104,14 @@ object BluetoothReceiptPrinter {
 
             writeBlank(out)
             writeDivider(out, '.')
-            writeCentered(out, "Today's little discovery:")
-            writeCenteredBold(out, items.firstOrNull()?.productName ?: "Coffee")
+            val discoveryProducts = distinctDiscoveryProducts(items)
+            writeCentered(out, discoveryHeading(discoveryProducts.size))
+            discoveryProducts.ifEmpty { listOf("Coffee") }.forEach { productName ->
+                writeCenteredBold(out, productName)
+            }
             writeDivider(out, '.')
             writeBlank(out)
-            writeCentered(out, "Thank you for slowing down with us.")
-            writeCentered(out, "Take a breath - Sip slowly")
-            writeCentered(out, "Grow gently")
+            writeCentered(out, "Take a breath - Sip slowly - Grow gently")
 
             // Feed + cut
             out.write(byteArrayOf(0x1B, 0x64, 0x04)) // ESC d 4 (feed 4 lines)

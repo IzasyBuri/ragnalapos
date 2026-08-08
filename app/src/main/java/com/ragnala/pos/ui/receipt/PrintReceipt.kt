@@ -294,7 +294,14 @@ internal class ReceiptLayout(
 
         // ---- Discovery box: intentionally simple for thermal-paper clarity ----
         y += step * 0.5f
-        val boxH = 104f * scale
+        val discoveryProducts = distinctDiscoveryProducts(items)
+        val discoveryPaint = paint(italic = true).apply { textSize = s * 0.9f }
+        val discoveryLines = wrapReceiptText(
+            discoveryProducts.joinToString(" / "),
+            boxWidth = right - x - 40f * scale,
+            paint = discoveryPaint,
+        )
+        val boxH = 72f * scale + discoveryLines.size * s * 0.95f
         val box = RectF(x + 20f * scale, y, right - 20f * scale, y + boxH)
         val dash = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.BLACK
@@ -304,20 +311,18 @@ internal class ReceiptLayout(
         }
         canvas.drawRoundRect(box, 16f * scale, 16f * scale, dash)
 
-        val boxPaint = paint(italic = true).apply {
-            textSize = s * 0.9f
-            textAlign = Paint.Align.CENTER
+        val heading = discoveryHeading(discoveryProducts.size)
+        val discoveryLinesWithHeading = listOf(heading) + discoveryLines.ifEmpty { listOf("Coffee") }
+        val lineMetrics = discoveryPaint.fontMetrics
+        val lineHeight = lineMetrics.descent - lineMetrics.ascent
+        var discoveryBaseline = box.top + 34f * scale
+        discoveryLinesWithHeading.forEach { line ->
+            centerText(canvas, line, box.left + 10f * scale, box.right - 10f * scale, discoveryBaseline, discoveryPaint)
+            discoveryBaseline += lineHeight
         }
-        val discovery = "Today's little discovery: ${items.firstOrNull()?.productName ?: "coffee"}"
-        val metrics = boxPaint.fontMetrics
-        val centeredBaseline = box.centerY() - (metrics.ascent + metrics.descent) / 2f
-        canvas.drawText(discovery, box.centerX(), centeredBaseline, boxPaint)
         y = box.bottom + step * 0.8f
 
         // ---- Footer ----
-        val footPaint = paint(italic = true).apply { textSize = s * 0.92f }
-        centerText(canvas, "Thank you for slowing down with us.", x, right, y, footPaint)
-        y += step * 0.95f
         drawDotDivider(canvas, x, right, y, scale)
         y += step * 0.95f
         val closingPaint = paint(italic = true).apply { textSize = s * 0.92f }
@@ -329,6 +334,22 @@ internal class ReceiptLayout(
     private fun centerText(c: Canvas, text: String, left: Float, right: Float, y: Float, p: Paint) {
         val tx = left + (right - left - p.measureText(text)) / 2f
         c.drawText(text, tx, y, p)
+    }
+
+    private fun wrapReceiptText(text: String, boxWidth: Float, paint: Paint): List<String> {
+        val lines = mutableListOf<String>()
+        var line = ""
+        text.split(" ").forEach { word ->
+            val candidate = if (line.isEmpty()) word else "$line $word"
+            if (line.isNotEmpty() && paint.measureText(candidate) > boxWidth) {
+                lines += line
+                line = word
+            } else {
+                line = candidate
+            }
+        }
+        if (line.isNotEmpty()) lines += line
+        return lines
     }
 
     /** Clear two-column row: label left, amount right; no leader clutter. */
