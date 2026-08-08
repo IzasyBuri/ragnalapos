@@ -365,7 +365,7 @@ private fun ProductList(
     }
     LazyColumn(
         modifier = modifier,
-        contentPadding = PaddingValues(start = RagnalaSpacing.md, top = RagnalaSpacing.md, end = RagnalaSpacing.md, bottom = RagnalaSpacing.xxxl + RagnalaSpacing.xxl),
+        contentPadding = PaddingValues(start = RagnalaSpacing.md, top = RagnalaSpacing.md, end = RagnalaSpacing.md, bottom = RagnalaSpacing.md),
         verticalArrangement = Arrangement.spacedBy(RagnalaSpacing.sm),
     ) {
         items(products, key = { it.id }) { product ->
@@ -401,7 +401,7 @@ private fun ProductGrid(
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 220.dp),
         modifier = modifier,
-        contentPadding = PaddingValues(start = RagnalaSpacing.md, top = RagnalaSpacing.md, end = RagnalaSpacing.md, bottom = RagnalaSpacing.xxxl + RagnalaSpacing.xxl),
+        contentPadding = PaddingValues(start = RagnalaSpacing.md, top = RagnalaSpacing.md, end = RagnalaSpacing.md, bottom = RagnalaSpacing.md),
         horizontalArrangement = Arrangement.spacedBy(RagnalaSpacing.md),
         verticalArrangement = Arrangement.spacedBy(RagnalaSpacing.md),
     ) {

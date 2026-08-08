@@ -151,7 +151,11 @@ fun ProductEditorScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    text = stringResource(R.string.mgmt_add_menu_item),
+                    text = if (state.editingId != null) {
+                        stringResource(R.string.mgmt_edit_product)
+                    } else {
+                        stringResource(R.string.mgmt_new_product)
+                    },
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                 )
