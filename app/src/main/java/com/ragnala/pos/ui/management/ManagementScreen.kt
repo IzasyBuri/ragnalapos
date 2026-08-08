@@ -40,6 +40,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.collectAsState
+import com.ragnala.pos.ui.components.RagnalaCard
+import com.ragnala.pos.ui.components.RagnalaPrimaryButton
+import com.ragnala.pos.ui.components.RagnalaSectionHeader
+import com.ragnala.pos.ui.components.RagnalaSecondaryButton
+import com.ragnala.pos.ui.theme.RagnalaRadius
+import com.ragnala.pos.ui.theme.RagnalaSpacing
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -91,22 +97,8 @@ fun ManagementScreen(
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
             }
 
-            // Menu products are editable by both barista and owner (no owner PIN required).
-            Surface(
-                onClick = onProductsClick,
-                shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(stringResource(R.string.mgmt_menu_products), style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        stringResource(R.string.mgmt_menu_products_desc),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-            }
+            RagnalaSectionHeader("Operations", modifier = Modifier.padding(top = RagnalaSpacing.sm))
+            ManagementMenuRow(stringResource(R.string.mgmt_menu_products), stringResource(R.string.mgmt_menu_products_desc), onProductsClick, emphasized = true)
 
             if (!ownerVerified) {
                 OutlinedTextField(
@@ -128,23 +120,29 @@ fun ManagementScreen(
             // Owner verified â€” show settings
             ManagementMenuRow(stringResource(R.string.mgmt_inventory_title), stringResource(R.string.mgmt_inventory_desc), onInventoryClick)
             ManagementMenuRow(stringResource(R.string.mgmt_expenses_title), stringResource(R.string.mgmt_expenses_desc), onExpensesClick)
+            RagnalaSectionHeader("Insights", modifier = Modifier.padding(top = RagnalaSpacing.md))
             ManagementMenuRow(stringResource(R.string.mgmt_reports_title), stringResource(R.string.mgmt_reports_desc), onReportsClick)
-            ManagementMenuRow(stringResource(R.string.mgmt_backup_title), stringResource(R.string.mgmt_backup_desc), onBackupClick)
-            PinChangeRow(label = stringResource(R.string.mgmt_barista_pin), onSave = { viewModel.changeBaristaPin(it) })
-            PinChangeRow(label = stringResource(R.string.mgmt_owner_pin), onSave = { viewModel.changeOwnerPin(it) })
+            RagnalaSectionHeader("Store", modifier = Modifier.padding(top = RagnalaSpacing.md))
             StoreSettings(viewModel = viewModel)
             QrisSettings(viewModel = viewModel)
+            RagnalaSectionHeader("Security", modifier = Modifier.padding(top = RagnalaSpacing.md))
+            PinChangeRow(label = stringResource(R.string.mgmt_barista_pin), onSave = { viewModel.changeBaristaPin(it) })
+            PinChangeRow(label = stringResource(R.string.mgmt_owner_pin), onSave = { viewModel.changeOwnerPin(it) })
+            RagnalaSectionHeader("Data", modifier = Modifier.padding(top = RagnalaSpacing.md))
+            ManagementMenuRow(stringResource(R.string.mgmt_backup_title), stringResource(R.string.mgmt_backup_desc), onBackupClick)
         }
     }
 }
 
 @Composable
-private fun ManagementMenuRow(title: String, subtitle: String, onClick: () -> Unit) {
+private fun ManagementMenuRow(title: String, subtitle: String, onClick: () -> Unit, emphasized: Boolean = false) {
     Surface(
         onClick = onClick,
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 1.dp,
+        shape = RoundedCornerShape(RagnalaRadius.card),
+        color = if (emphasized) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+        contentColor = if (emphasized) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shadowElevation = 0.dp,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -42,6 +43,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.ragnala.pos.ui.customer.formatRupiah
+import com.ragnala.pos.ui.components.RagnalaMoneySize
+import com.ragnala.pos.ui.components.RagnalaMoneyText
+import com.ragnala.pos.ui.components.RagnalaPrimaryButton
+import com.ragnala.pos.ui.components.RagnalaStatusBadge
+import com.ragnala.pos.ui.components.RagnalaBadgeTone
+import com.ragnala.pos.ui.theme.RagnalaRadius
+import com.ragnala.pos.ui.theme.RagnalaSpacing
 
 @Composable
 fun ProductListScreen(
@@ -65,11 +73,7 @@ fun ProductListScreen(
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(start = 8.dp).weight(1f),
                 )
-                Button(onClick = onAddProduct) {
-                    Icon(Icons.Filled.Add, contentDescription = null)
-                    Spacer(Modifier.width(6.dp))
-                    Text(stringResource(R.string.mgmt_new_product))
-                }
+                RagnalaPrimaryButton(stringResource(R.string.mgmt_new_product), onAddProduct, modifier = Modifier.heightIn(min = 48.dp))
             }
         }
 
@@ -137,14 +141,15 @@ private fun ProductManagementRow(
 ) {
     val product = row.product
     Card(
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(RagnalaRadius.card),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = Modifier.fillMaxWidth(),
         onClick = { onClick(product.id) },
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            modifier = Modifier.fillMaxWidth().padding(RagnalaSpacing.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ProductThumbnail(row = row)
@@ -164,14 +169,11 @@ private fun ProductManagementRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = formatRupiah(product.price),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                )
+                RagnalaMoneyText(product.price, size = RagnalaMoneySize.Medium, color = MaterialTheme.colorScheme.primary)
             }
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(RagnalaSpacing.xs))
+            RagnalaStatusBadge(if (product.available) stringResource(R.string.mgmt_available) else stringResource(R.string.mgmt_unavailable), if (product.available) RagnalaBadgeTone.Success else RagnalaBadgeTone.Error)
+            Spacer(Modifier.width(RagnalaSpacing.xs))
             Switch(
                 checked = product.available,
                 onCheckedChange = { onToggleAvailability(product.id, product.available) },

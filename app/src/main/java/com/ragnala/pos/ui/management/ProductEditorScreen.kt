@@ -60,6 +60,11 @@ import coil.compose.AsyncImage
 import com.ragnala.pos.data.db.CategoryEntity
 import com.ragnala.pos.data.db.IngredientEntity
 import com.ragnala.pos.data.db.ModifierGroupEntity
+import com.ragnala.pos.ui.components.RagnalaPrimaryButton
+import com.ragnala.pos.ui.components.RagnalaSectionHeader
+import com.ragnala.pos.ui.components.RagnalaCard
+import com.ragnala.pos.ui.theme.RagnalaSpacing
+import com.ragnala.pos.ui.theme.RagnalaRadius
 
 @Composable
 fun ProductEditorScreen(
@@ -126,6 +131,7 @@ fun ProductEditorScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
+                RagnalaSectionHeader("Basic information")
                 OutlinedTextField(
                     value = state.name,
                     onValueChange = onNameChange,
@@ -206,6 +212,7 @@ fun ProductEditorScreen(
 }
 
 
+                RagnalaSectionHeader("Menu appearance")
                 Surface(
                     shape = MaterialTheme.shapes.medium,
                     color = MaterialTheme.colorScheme.surface,
@@ -239,6 +246,7 @@ fun ProductEditorScreen(
                     enabled = !state.saving,
                 )
 
+                RagnalaSectionHeader("Customization")
                 ModifierGroupAssignment(
                     groups = groups,
                     selectedIds = state.selectedGroupIds,
@@ -246,6 +254,7 @@ fun ProductEditorScreen(
                     enabled = !state.saving,
                 )
 
+                RagnalaSectionHeader("Recipe & Stock")
                 RecipeIngredientsSection(
                     drafts = state.recipeItems,
                     ingredients = ingredients,
@@ -264,20 +273,12 @@ fun ProductEditorScreen(
                     )
                 }
 
-                Button(
+                RagnalaPrimaryButton(
+                    text = if (state.saving) "Saving…" else stringResource(R.string.mgmt_save_product),
                     onClick = onSave,
                     enabled = !state.saving && categories.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth().height(56.dp),
-                ) {
-                    if (state.saving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
-                            strokeWidth = 2.dp,
-                        )
-                    } else {
-                        Text(stringResource(R.string.mgmt_save_product))
-                    }
-                }
+                )
                 Spacer(Modifier.height(8.dp))
             }
         }
