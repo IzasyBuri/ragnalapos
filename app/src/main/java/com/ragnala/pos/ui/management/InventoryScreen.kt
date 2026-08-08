@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -40,6 +41,16 @@ import androidx.compose.ui.unit.dp
 import com.ragnala.pos.data.db.IngredientEntity
 import com.ragnala.pos.ui.customer.formatRupiah
 import com.ragnala.pos.ui.customer.trimAmount
+import com.ragnala.pos.ui.components.RagnalaEmptyState
+import com.ragnala.pos.ui.components.RagnalaMoneySize
+import com.ragnala.pos.ui.components.RagnalaMoneyText
+import com.ragnala.pos.ui.components.RagnalaPrimaryButton
+import com.ragnala.pos.ui.components.RagnalaSecondaryButton
+import com.ragnala.pos.ui.components.RagnalaStatusBadge
+import com.ragnala.pos.ui.components.RagnalaBadgeTone
+import com.ragnala.pos.ui.theme.WarmAmberContainer
+import com.ragnala.pos.ui.theme.RagnalaRadius
+import com.ragnala.pos.ui.theme.RagnalaSpacing
 
 /** Inventory (PRD Â§9): ingredients, low-stock surfacing, stock adjustments, CRUD. */
 @Composable
@@ -79,13 +90,13 @@ fun InventoryScreen(
 
         if (lowStock.isNotEmpty()) {
             Surface(
-                color = MaterialTheme.colorScheme.errorContainer,
+                color = WarmAmberContainer,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text(stringResource(R.string.mgmt_low_stock), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onErrorContainer)
+                    Text(stringResource(R.string.mgmt_low_stock), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                     lowStock.take(5).forEach { ing ->
-                        Text("â€¢ ${ing.name} (${ing.currentStock} ${ing.unit})", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer)
+                        Text("â€¢ ${ing.name} (${ing.currentStock} ${ing.unit})", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
@@ -93,7 +104,7 @@ fun InventoryScreen(
 
         if (ingredients.isEmpty()) {
             Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.mgmt_no_ingredients), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                RagnalaEmptyState("No ingredients yet", "Add ingredients to start tracking stock and recipe costs.", Modifier.fillMaxWidth())
             }
         } else {
             LazyColumn(
@@ -103,8 +114,9 @@ fun InventoryScreen(
                 items(ingredients, key = { it.id }) { ing ->
                     Surface(
                         color = MaterialTheme.colorScheme.surface,
-                        shadowElevation = 2.dp,
-                        shape = MaterialTheme.shapes.medium,
+                        shadowElevation = 0.dp,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(RagnalaRadius.card),
                         onClick = { editing = ing; showForm = true },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
@@ -112,10 +124,10 @@ fun InventoryScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(ing.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                                 LowStockBadge(show = ing.currentStock <= ing.minStock)
-                                Text("${ing.currentStock} ${ing.unit}", style = MaterialTheme.typography.bodyLarge)
                             }
+                            Text("${ing.currentStock} ${ing.unit}", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("min ${ing.minStock}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                                Text("Minimum ${ing.minStock} ${ing.unit}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
                                 Text(
                                     if (ing.purchasePrice != null && ing.packSize != null)
                                         "${formatRupiah(ing.purchasePrice)} / ${trimAmount(ing.packSize)} ${ing.unit}"
@@ -125,21 +137,14 @@ fun InventoryScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
-                            TextButton(onClick = { adjusting = ing }, modifier = Modifier.padding(top = 4.dp)) {
-                                Text(stringResource(R.string.mgmt_adjust_stock))
-                            }
+                            RagnalaSecondaryButton(stringResource(R.string.mgmt_adjust_stock), { adjusting = ing }, modifier = Modifier.fillMaxWidth().padding(top = RagnalaSpacing.xs))
                         }
                     }
                 }
             }
         }
 
-        Button(
-            onClick = { editing = null; showForm = true },
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-        ) {
-            Text(stringResource(R.string.mgmt_add_ingredient))
-        }
+        RagnalaPrimaryButton(stringResource(R.string.mgmt_add_ingredient), { editing = null; showForm = true }, modifier = Modifier.fillMaxWidth().padding(16.dp).heightIn(min = 52.dp))
     }
 
     if (showForm) {
@@ -275,14 +280,5 @@ private fun AdjustStockDialog(
 
 @Composable
 private fun LowStockBadge(show: Boolean) {
-    if (show) {
-        androidx.compose.material3.Text(
-            text = "⚠ Rendah",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier
-                .padding(horizontal = 8.dp, vertical = 2.dp)
-                .background(MaterialTheme.colorScheme.errorContainer, shape = MaterialTheme.shapes.small),
-        )
-    }
+    if (show) RagnalaStatusBadge("Low stock", RagnalaBadgeTone.Warning)
 }

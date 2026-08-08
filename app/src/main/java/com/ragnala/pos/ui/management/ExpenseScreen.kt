@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -38,6 +39,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ragnala.pos.data.db.ExpenseEntity
 import com.ragnala.pos.ui.customer.formatRupiah
+import com.ragnala.pos.ui.components.RagnalaEmptyState
+import com.ragnala.pos.ui.components.RagnalaMoneySize
+import com.ragnala.pos.ui.components.RagnalaMoneyText
+import com.ragnala.pos.ui.components.RagnalaPrimaryButton
+import com.ragnala.pos.ui.theme.RagnalaRadius
+import com.ragnala.pos.ui.theme.RagnalaSpacing
 
 /** Expenses (PRD Â§9): list this month's expenses, add, and remove. */
 @Composable
@@ -70,15 +77,16 @@ fun ExpenseScreen(
         }
 
         val total = expenses.sumOf { it.amount }
-        Text(
-            stringResource(R.string.mgmt_this_month_total, formatRupiah(total)),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-        )
+        Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = androidx.compose.foundation.shape.RoundedCornerShape(RagnalaRadius.card), modifier = Modifier.fillMaxWidth().padding(horizontal = RagnalaSpacing.md, vertical = RagnalaSpacing.sm)) {
+            Column(Modifier.padding(RagnalaSpacing.md)) {
+                Text("Total expenses", style = MaterialTheme.typography.titleMedium)
+                RagnalaMoneyText(total, size = RagnalaMoneySize.Large, color = MaterialTheme.colorScheme.primary)
+            }
+        }
 
         if (expenses.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.mgmt_no_expenses), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                RagnalaEmptyState("No expenses yet", "Record store spending when it happens.", Modifier.fillMaxWidth())
             }
         } else {
             LazyColumn(
@@ -86,15 +94,15 @@ fun ExpenseScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(expenses, key = { it.id }) { e ->
-                    Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 2.dp, shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
-                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 0.dp, border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), shape = androidx.compose.foundation.shape.RoundedCornerShape(RagnalaRadius.card), modifier = Modifier.fillMaxWidth()) {
+                        Row(modifier = Modifier.padding(RagnalaSpacing.md), verticalAlignment = Alignment.CenterVertically) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(e.category, style = MaterialTheme.typography.titleMedium)
                                 e.note.takeIf { it.isNotBlank() }?.let {
                                     Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
-                            Text(formatRupiah(e.amount), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            RagnalaMoneyText(e.amount, size = RagnalaMoneySize.Medium)
                             TextButton(onClick = { viewModel.deleteExpense(e) }) {
                                 Text(stringResource(R.string.mgmt_remove), color = MaterialTheme.colorScheme.error)
                             }
@@ -104,9 +112,7 @@ fun ExpenseScreen(
             }
         }
 
-        Button(onClick = { showAdd = true }, modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Text(stringResource(R.string.mgmt_add_expense))
-        }
+        RagnalaPrimaryButton(stringResource(R.string.mgmt_add_expense), { showAdd = true }, modifier = Modifier.fillMaxWidth().padding(16.dp).heightIn(min = 52.dp))
     }
 
     if (showAdd) {
