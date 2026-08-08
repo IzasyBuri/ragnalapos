@@ -257,6 +257,13 @@ fun RagnalaApp() {
             restoreState = true
         }
     }
+    val navigateToCustomerMenu = {
+        navController.navigate(RagnalaRoutes.CUSTOMER) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = false }
+            launchSingleTop = true
+            restoreState = false
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -276,6 +283,12 @@ fun RagnalaApp() {
             if (!customerMode && !isLargeStaff) {
                 NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     NavigationBarItem(
+                        selected = false,
+                        onClick = navigateToCustomerMenu,
+                        icon = { Icon(Icons.Outlined.Coffee, contentDescription = stringResource(R.string.nav_menu)) },
+                        label = { Text(stringResource(R.string.nav_menu)) },
+                    )
+                    NavigationBarItem(
                         selected = isBaristaRoute(currentRoute),
                         onClick = { navigateToTopLevel(RagnalaRoutes.BARISTA) },
                         icon = { Icon(Icons.Outlined.Person, contentDescription = null) },
@@ -294,6 +307,12 @@ fun RagnalaApp() {
         Row(modifier = Modifier.fillMaxSize()) {
             if (isLargeStaff) {
                 NavigationRail(containerColor = MaterialTheme.colorScheme.surface) {
+                    NavigationRailItem(
+                        selected = false,
+                        onClick = navigateToCustomerMenu,
+                        icon = { Icon(Icons.Outlined.Coffee, contentDescription = stringResource(R.string.nav_menu)) },
+                        label = { Text(stringResource(R.string.nav_menu)) },
+                    )
                     NavigationRailItem(selected = isBaristaRoute(currentRoute), onClick = { navigateToTopLevel(RagnalaRoutes.BARISTA) }, icon = { Icon(Icons.Outlined.Person, contentDescription = null) }, label = { Text(stringResource(R.string.nav_barista)) })
                     NavigationRailItem(selected = isManagementRoute(currentRoute), onClick = { navigateToTopLevel(RagnalaRoutes.MANAGEMENT) }, icon = { Icon(Icons.Filled.Settings, contentDescription = null) }, label = { Text(stringResource(R.string.nav_manage)) })
                 }
