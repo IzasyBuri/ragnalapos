@@ -24,6 +24,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,7 +53,11 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.ragnala.pos.data.db.CategoryEntity
 import com.ragnala.pos.data.db.ProductEntity
-import com.ragnala.pos.ui.theme.AppOutline
+import com.ragnala.pos.ui.components.RagnalaEmptyState
+import com.ragnala.pos.ui.components.RagnalaMoneySize
+import com.ragnala.pos.ui.components.RagnalaMoneyText
+import com.ragnala.pos.ui.theme.RagnalaRadius
+import com.ragnala.pos.ui.theme.RagnalaSpacing
 import com.ragnala.pos.ui.theme.RagnalaTheme
 
 /**
@@ -72,6 +79,7 @@ fun BrowseScreen(
     onQuickRemove: (ProductEntity) -> Unit = {},
     onCartClick: () -> Unit = {},
     cartCount: Int = 0,
+    cartSubtotal: Long = 0L,
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -89,6 +97,7 @@ fun BrowseScreen(
                 onQuickRemove = onQuickRemove,
                 onCartClick = onCartClick,
                 cartCount = cartCount,
+                cartSubtotal = cartSubtotal,
             )
         } else {
             PhoneBrowse(
@@ -103,6 +112,7 @@ fun BrowseScreen(
                 onQuickRemove = onQuickRemove,
                 onCartClick = onCartClick,
                 cartCount = cartCount,
+                cartSubtotal = cartSubtotal,
             )
         }
     }
@@ -121,6 +131,7 @@ private fun PhoneBrowse(
     onQuickRemove: (ProductEntity) -> Unit,
     onCartClick: () -> Unit,
     cartCount: Int = 0,
+    cartSubtotal: Long = 0L,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         CategoryChips(
@@ -140,6 +151,7 @@ private fun PhoneBrowse(
         if (cartCount > 0) {
             CartBar(
                 cartCount = cartCount,
+                cartSubtotal = cartSubtotal,
                 onClick = onCartClick,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -150,51 +162,50 @@ private fun PhoneBrowse(
 @Composable
 private fun CartBar(
     cartCount: Int,
+    cartSubtotal: Long,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         color = MaterialTheme.colorScheme.primary,
-        shape = MaterialTheme.shapes.large,
-        shadowElevation = 3.dp,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        shape = RoundedCornerShape(RagnalaRadius.card),
+        tonalElevation = 0.dp,
+        shadowElevation = 1.dp,
         modifier = modifier
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = RagnalaSpacing.md, vertical = RagnalaSpacing.xs)
+            .heightIn(min = 68.dp)
             .clickable(onClick = onClick),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = RagnalaSpacing.md, vertical = RagnalaSpacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column {
+            Text(text = "🛒", style = MaterialTheme.typography.titleLarge)
+            Spacer(modifier = Modifier.width(RagnalaSpacing.sm))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.cust_cart_title),
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     text = stringResource(R.string.cust_cart_item_count, cartCount),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f),
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.82f),
                 )
             }
-            Spacer(modifier = Modifier.weight(1f))
-            Surface(
-                color = MaterialTheme.colorScheme.onPrimary,
-                contentColor = MaterialTheme.colorScheme.primary,
-                shape = CircleShape,
-            ) {
-                Box(
-                    modifier = Modifier.size(38.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "$cartCount",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+            if (cartSubtotal > 0L) {
+                RagnalaMoneyText(
+                    amount = cartSubtotal,
+                    size = RagnalaMoneySize.Medium,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+                Spacer(modifier = Modifier.width(RagnalaSpacing.xs))
             }
+            Text("→", style = MaterialTheme.typography.headlineSmall)
         }
     }
 }
@@ -212,6 +223,7 @@ private fun TabletBrowse(
     onQuickRemove: (ProductEntity) -> Unit,
     onCartClick: () -> Unit,
     cartCount: Int,
+    cartSubtotal: Long,
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
         // left rail â€” category list
@@ -254,6 +266,7 @@ private fun TabletBrowse(
             if (cartCount > 0) {
                 CartBar(
                     cartCount = cartCount,
+                    cartSubtotal = cartSubtotal,
                     onClick = onCartClick,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -296,21 +309,19 @@ private fun CategoryChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val signShape = RoundedCornerShape(8.dp)
-    val signColor = if (selected) MaterialTheme.colorScheme.primary
-    else MaterialTheme.colorScheme.surface
-    val signTextColor = if (selected) MaterialTheme.colorScheme.onPrimary
-    else MaterialTheme.colorScheme.onSurfaceVariant
-    val borderColor = if (selected) Color.Transparent
-    else AppOutline
+    val signShape = RoundedCornerShape(RagnalaRadius.smallControl)
+    val signColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+    val signTextColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    val borderColor = if (selected) Color.Transparent else MaterialTheme.colorScheme.outline
 
     Surface(
         shape = signShape,
         color = signColor,
-        shadowElevation = if (selected) 2.dp else 0.dp,
+        contentColor = signTextColor,
+        tonalElevation = if (selected) 1.dp else 0.dp,
         modifier = modifier
             .widthIn(min = 88.dp)
-            .heightIn(min = 44.dp)
+            .heightIn(min = 48.dp)
             .border(1.dp, borderColor, signShape)
             .clickable(onClick = onClick),
     ) {
@@ -382,32 +393,25 @@ private fun ProductGrid(
         EmptyMenu(modifier = modifier)
         return
     }
-    val columns = 3
-    LazyColumn(
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 220.dp),
         modifier = modifier,
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(RagnalaSpacing.md),
+        horizontalArrangement = Arrangement.spacedBy(RagnalaSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(RagnalaSpacing.md),
     ) {
-        items(products.chunked(columns)) { rowItems ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                rowItems.forEach { product ->
-                    val canQuickAdd = product.id in quickAddEligibleProductIds
-                    ProductCard(
-                        product = product,
-                        onClick = { onProductClick(product) },
-                        canQuickAdd = canQuickAdd,
-                        quantity = baseProductQuantities[product.id] ?: 0,
-                        onQuickAdd = {
-                            if (canQuickAdd) onQuickAdd(product) else onProductClick(product)
-                        },
-                        onQuickRemove = { onQuickRemove(product) },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
+        items(products, key = { it.id }) { product ->
+            val canQuickAdd = product.id in quickAddEligibleProductIds
+            ProductCard(
+                product = product,
+                onClick = { onProductClick(product) },
+                canQuickAdd = canQuickAdd,
+                quantity = baseProductQuantities[product.id] ?: 0,
+                onQuickAdd = {
+                    if (canQuickAdd) onQuickAdd(product) else onProductClick(product)
+                },
+                onQuickRemove = { onQuickRemove(product) },
+            )
         }
     }
 }
@@ -423,21 +427,18 @@ private fun ProductRow(
 ) {
     Card(
         onClick = onClick,
-        shape = MaterialTheme.shapes.medium,
+        shape = RoundedCornerShape(RagnalaRadius.card),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ProductImage(product = product, size = 84.dp)
-            Spacer(modifier = Modifier.width(16.dp))
+            ProductImage(product = product, size = 112.dp)
+            Spacer(modifier = Modifier.width(RagnalaSpacing.md))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = product.name,
@@ -462,8 +463,12 @@ private fun ProductRow(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    PricePlaque(price = product.price)
-                    Spacer(modifier = Modifier.width(8.dp))
+                    RagnalaMoneyText(
+                        amount = product.price,
+                        size = RagnalaMoneySize.Medium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(modifier = Modifier.width(RagnalaSpacing.xs))
                     QuickAddControl(
                         productName = product.name,
                         canQuickAdd = canQuickAdd,
@@ -489,34 +494,39 @@ private fun ProductCard(
 ) {
     Card(
         onClick = onClick,
-        shape = MaterialTheme.shapes.medium,
+        shape = RoundedCornerShape(RagnalaRadius.card),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = modifier,
     ) {
         Column {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                ProductImage(product = product, size = 160.dp, fullWidth = true)
-            }
-            Column(modifier = Modifier.padding(12.dp)) {
+            ProductImage(product = product, size = 176.dp, fullWidth = true)
+            Column(modifier = Modifier.padding(RagnalaSpacing.md)) {
                 Text(
                     text = product.name,
                     style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = formatRupiah(product.price),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.CenterEnd,
-                ) {
+                if (product.description.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(RagnalaSpacing.xs))
+                    Text(
+                        text = product.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(modifier = Modifier.height(RagnalaSpacing.sm))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RagnalaMoneyText(
+                        amount = product.price,
+                        size = RagnalaMoneySize.Medium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f),
+                    )
                     QuickAddControl(
                         productName = product.name,
                         canQuickAdd = canQuickAdd,
@@ -527,22 +537,6 @@ private fun ProductCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun PricePlaque(price: Long) {
-    Surface(
-        color = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary,
-        shape = RoundedCornerShape(14.dp),
-    ) {
-        Text(
-            text = formatRupiah(price),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-        )
     }
 }
 
@@ -660,10 +654,13 @@ private fun ProductImage(
 @Composable
 private fun EmptyMenu(modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(
-            text = stringResource(R.string.cust_menu_brewing),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        RagnalaEmptyState(
+            title = "Nothing here yet",
+            description = "This part of the menu is still being prepared.",
+            modifier = Modifier.fillMaxWidth(),
+            decoration = {
+                Text("☕", style = MaterialTheme.typography.headlineMedium)
+            },
         )
     }
 }

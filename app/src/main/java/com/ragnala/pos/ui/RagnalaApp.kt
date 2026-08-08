@@ -327,6 +327,7 @@ fun RagnalaApp() {
                     },
                     onCartClick = { navController.navigate(RagnalaRoutes.CART) },
                     cartCount = cartViewModel.itemCount.collectAsState().value,
+                    cartSubtotal = cartViewModel.subtotal.collectAsState().value,
                 )
             }
             composable(
