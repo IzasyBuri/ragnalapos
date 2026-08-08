@@ -9,9 +9,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Coffee
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.unit.dp
+import com.ragnala.pos.ui.components.RagnalaTopBar
+import com.ragnala.pos.ui.theme.RagnalaSpacing
+import com.ragnala.pos.ui.theme.RagnalaRadius
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -84,6 +94,24 @@ import com.ragnala.pos.ui.management.BackupViewModel
 
 // DESIGN.md Â§Navigation â€” simple, predictable, no deep nesting (max depth 3).
 // Two top-level modes; internal flows stay shallow.
+
+private val customerRoutes = setOf(
+    RagnalaRoutes.CUSTOMER,
+    RagnalaRoutes.PRODUCT_DETAIL,
+    RagnalaRoutes.CART,
+    RagnalaRoutes.NAME,
+    RagnalaRoutes.CONFIRM,
+    RagnalaRoutes.THANK_YOU,
+)
+
+private fun isCustomerRoute(route: String?): Boolean =
+    route != null && (route in customerRoutes || route.startsWith("${RagnalaRoutes.PRODUCT_DETAIL}/") || route.startsWith("${RagnalaRoutes.CONFIRM}?"))
+
+private fun isBaristaRoute(route: String?): Boolean =
+    route == RagnalaRoutes.BARISTA || route?.startsWith("barista/") == true
+
+private fun isManagementRoute(route: String?): Boolean =
+    route == RagnalaRoutes.MANAGEMENT || route?.startsWith("management/") == true
 
 object RagnalaRoutes {
     const val CUSTOMER = "customer"
@@ -216,64 +244,55 @@ fun RagnalaApp() {
         }
     }
 
+    val customerMode = isCustomerRoute(currentRoute)
+    val showCustomerTopBar = currentRoute == RagnalaRoutes.CUSTOMER
+    val navigateToTopLevel: (String) -> Unit = { route ->
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-            ) {
-                NavigationBarItem(
-                    selected = currentRoute == RagnalaRoutes.CUSTOMER,
-                    onClick = {
-                        navController.navigate(RagnalaRoutes.CUSTOMER) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
+        topBar = {
+            if (showCustomerTopBar) {
+                RagnalaTopBar(
+                    title = "Ragnala Coffee & Botanee",
+                    actions = {
+                        IconButton(onClick = { navigateToTopLevel(RagnalaRoutes.BARISTA) }) {
+                            Icon(Icons.Filled.Lock, contentDescription = "Staff access")
                         }
                     },
-                    icon = { Icon(Icons.Outlined.Coffee, contentDescription = null) },
-                    label = { Text(stringResource(R.string.nav_menu)) },
-                )
-                NavigationBarItem(
-                    selected = currentRoute == RagnalaRoutes.BARISTA,
-                    onClick = {
-                        navController.navigate(RagnalaRoutes.BARISTA) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    icon = { Icon(Icons.Outlined.Person, contentDescription = null) },
-                    label = { Text(stringResource(R.string.nav_barista)) },
-                )
-                NavigationBarItem(
-                    selected = currentRoute == RagnalaRoutes.MANAGEMENT ||
-                        currentRoute == RagnalaRoutes.PRODUCTS ||
-                        currentRoute == RagnalaRoutes.PRODUCT_NEW,
-                    onClick = {
-                        navController.navigate(RagnalaRoutes.MANAGEMENT) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-                    label = { Text(stringResource(R.string.nav_manage)) },
                 )
             }
         },
+        bottomBar = {
+            if (!customerMode) {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                    NavigationBarItem(
+                        selected = isBaristaRoute(currentRoute),
+                        onClick = { navigateToTopLevel(RagnalaRoutes.BARISTA) },
+                        icon = { Icon(Icons.Outlined.Person, contentDescription = null) },
+                        label = { Text(stringResource(R.string.nav_barista)) },
+                    )
+                    NavigationBarItem(
+                        selected = isManagementRoute(currentRoute),
+                        onClick = { navigateToTopLevel(RagnalaRoutes.MANAGEMENT) },
+                        icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
+                        label = { Text(stringResource(R.string.nav_manage)) },
+                    )
+                }
+            }
+        },
     ) { padding ->
-        NavHost(
-            navController = navController,
-            startDestination = RagnalaRoutes.CUSTOMER,
-            modifier = Modifier.padding(padding),
-        ) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            NavHost(
+                navController = navController,
+                startDestination = RagnalaRoutes.CUSTOMER,
+                modifier = Modifier.padding(padding).fillMaxWidth(),
+            ) {
             composable(RagnalaRoutes.CUSTOMER) {
                 val context = LocalContext.current
                 val vm: BrowseViewModel = viewModel(
@@ -594,6 +613,7 @@ fun RagnalaApp() {
                 )
             }
         }
+    }
     }
 }
 
