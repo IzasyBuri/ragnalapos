@@ -6,12 +6,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,11 +26,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,6 +44,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -48,13 +56,13 @@ import coil.compose.AsyncImage
 import com.ragnala.pos.data.db.ModifierGroupEntity
 import com.ragnala.pos.data.db.ModifierOptionEntity
 import com.ragnala.pos.data.db.ProductEntity
+import com.ragnala.pos.ui.components.RagnalaMoneySize
+import com.ragnala.pos.ui.components.RagnalaMoneyText
+import com.ragnala.pos.ui.components.RagnalaPrimaryButton
+import com.ragnala.pos.ui.components.RagnalaSectionHeader
+import com.ragnala.pos.ui.theme.RagnalaRadius
+import com.ragnala.pos.ui.theme.RagnalaSpacing
 
-/**
- * Product detail â€” DESIGN.md: one product, clear choices, friendly wording.
- * Shows photo, description, modifier groups (required/optional, min/max
- * selections enforced), quantity stepper, and an add-to-cart bar with
- * running total. Big touch targets, no technical info.
- */
 @Composable
 fun ProductDetailScreen(
     product: ProductEntity?,
@@ -71,23 +79,29 @@ fun ProductDetailScreen(
         return
     }
 
-    val outOfStock = !isInStock
-
     var quantity by remember { mutableStateOf(1) }
-    // selections: groupId -> set of selected optionIds
     val selections = remember(product.id) { mutableStateOf(mapOf<String, Set<String>>()) }
-
     val selectedMap = selections.value
     val price = product.price + selectedMap.values.flatten()
-        .mapNotNull { optionId ->
-            optionsByGroup.values.flatten().firstOrNull { it.id == optionId }?.priceDelta
-        }
+        .mapNotNull { id -> optionsByGroup.values.flatten().firstOrNull { it.id == id }?.priceDelta }
         .sum()
+    val missingRequired = groups.any { group ->
+        group.required && (selectedMap[group.id]?.size ?: 0) < group.minSelections
+    }
+    val canAdd = isInStock && !missingRequired
+    val selectedModifiers = selectedMap.flatMap { (groupId, optionIds) ->
+        optionIds.mapNotNull { optionId ->
+            val group = groups.firstOrNull { it.id == groupId } ?: return@mapNotNull null
+            val option = optionsByGroup[groupId].orEmpty().firstOrNull { it.id == optionId } ?: return@mapNotNull null
+            CartModifier(group.name, option.name, option.priceDelta)
+        }
+    }
 
     fun toggle(group: ModifierGroupEntity, optionId: String) {
         val current = selectedMap[group.id].orEmpty()
         val next = when {
             optionId in current -> current - optionId
+            group.maxSelections == 1 -> setOf(optionId)
             group.maxSelections > 0 && current.size >= group.maxSelections -> current
             else -> current + optionId
         }
@@ -95,112 +109,108 @@ fun ProductDetailScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // top bar
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = RagnalaSpacing.xs, vertical = RagnalaSpacing.xxs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = stringResource(R.string.cust_back),
-                )
+            IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.cust_back))
             }
-            Text(
-                text = product.name,
-                style = MaterialTheme.typography.titleLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Text(product.name, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
 
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                start = 20.dp, end = 20.dp, bottom = 20.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            item {
-                ProductImage(product = product, modifier = Modifier
-                    .fillMaxWidth()
-                    .height(240.dp))
-            }
-            if (product.description.isNotBlank()) {
-                item {
-                    Text(
-                        text = product.description,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        BoxWithConstraints(modifier = Modifier.weight(1f)) {
+            val tablet = maxWidth >= 840.dp
+            if (tablet) {
+                Row(modifier = Modifier.fillMaxSize()) {
+                    ProductHero(product = product, modifier = Modifier.weight(0.43f).padding(RagnalaSpacing.lg))
+                    ModifierContent(
+                        groups = groups,
+                        optionsByGroup = optionsByGroup,
+                        selectedMap = selectedMap,
+                        onToggle = ::toggle,
+                        modifier = Modifier.weight(0.57f).fillMaxSize(),
                     )
                 }
-            }
-            items(groups.size) { index ->
-                val group = groups[index]
-                ModifierGroupSection(
-                    group = group,
-                    options = optionsByGroup[group.id].orEmpty(),
-                    selectedOptionIds = selectedMap[group.id].orEmpty(),
-                    onToggle = { toggle(group, it) },
+            } else {
+                ModifierContent(
+                    groups = groups,
+                    optionsByGroup = optionsByGroup,
+                    selectedMap = selectedMap,
+                    onToggle = ::toggle,
+                    header = { ProductHero(product) },
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
-            item { Spacer(modifier = Modifier.height(8.dp)) }
         }
 
-        // bottom bar â€” quantity + add to cart
         Surface(
             color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 0.dp,
-            shadowElevation = 4.dp,
+            tonalElevation = 1.dp,
+            shadowElevation = 2.dp,
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(RagnalaSpacing.md),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                QuantityStepper(
-                    quantity = quantity,
-                    onQuantityChange = { quantity = it },
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = formatRupiah(price.toLong() * quantity),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium,
-                    )
-                    val requiredGroups = groups.filter { it.required && it.minSelections > 0 }
-                    val missingRequired = requiredGroups.any { group ->
-                        (selectedMap[group.id]?.size ?: 0) < group.minSelections
-                    }
-                    val canAdd = !missingRequired && !outOfStock
-                    Button(
-                        onClick = { onAddToCart(quantity, selectedMap.flatMap { (groupId, optionIds) ->
-                            optionIds.mapNotNull { optionId ->
-                                val group = groups.firstOrNull { it.id == groupId } ?: return@mapNotNull null
-                                val option = optionsByGroup[groupId].orEmpty().firstOrNull { it.id == optionId } ?: return@mapNotNull null
-                                CartModifier(group.name, option.name, option.priceDelta)
-                            }
-                        }) },
+                QuantityStepper(quantity = quantity, onQuantityChange = { quantity = it })
+                Spacer(modifier = Modifier.width(RagnalaSpacing.md))
+                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
+                    RagnalaMoneyText(amount = price.toLong() * quantity, size = RagnalaMoneySize.Medium, color = MaterialTheme.colorScheme.primary)
+                    RagnalaPrimaryButton(
+                        text = if (!isInStock) stringResource(R.string.cust_sold_out) else "Add $quantity · ${formatRupiah(price.toLong() * quantity)}",
+                        onClick = { onAddToCart(quantity, selectedModifiers) },
                         enabled = canAdd,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (outOfStock) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f) else MaterialTheme.colorScheme.primary,
-                        ),
-                        shape = RoundedCornerShape(20.dp),
-                        modifier = Modifier.height(52.dp),
-                    ) {
-                        Text(
-                            if (outOfStock) stringResource(R.string.cust_sold_out) else stringResource(R.string.cust_add_to_cart),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                    }
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ProductHero(product: ProductEntity, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(RagnalaSpacing.md)) {
+        ProductImage(product, Modifier.fillMaxWidth().heightIn(min = 240.dp, max = 360.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(RagnalaSpacing.xs)) {
+            Text(product.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+            if (product.description.isNotBlank()) {
+                Text(product.description, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            }
+            RagnalaMoneyText(product.price, size = RagnalaMoneySize.Large, color = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+@Composable
+private fun ModifierContent(
+    groups: List<ModifierGroupEntity>,
+    optionsByGroup: Map<String, List<ModifierOptionEntity>>,
+    selectedMap: Map<String, Set<String>>,
+    onToggle: (ModifierGroupEntity, String) -> Unit,
+    modifier: Modifier = Modifier,
+    header: (@Composable () -> Unit)? = null,
+) {
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = RagnalaSpacing.lg, vertical = RagnalaSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(RagnalaSpacing.lg),
+    ) {
+        header?.let { item { it() } }
+        if (header == null) {
+            item { Text("Customize your drink", style = MaterialTheme.typography.headlineSmall) }
+        }
+        items(groups, key = { it.id }) { group ->
+            ModifierGroupSection(
+                group = group,
+                options = optionsByGroup[group.id].orEmpty(),
+                selectedOptionIds = selectedMap[group.id].orEmpty(),
+                onToggle = { onToggle(group, it) },
+            )
+        }
+        item { Spacer(modifier = Modifier.height(RagnalaSpacing.xxl)) }
     }
 }
 
@@ -211,113 +221,78 @@ private fun ModifierGroupSection(
     selectedOptionIds: Set<String>,
     onToggle: (String) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        val requiredMarker = stringResource(R.string.cust_required_marker)
-        val chooseUpToFormat = stringResource(R.string.cust_choose_up_to)
-        Text(
-            text = buildString {
-                append(group.name)
-                if (group.required) append(requiredMarker)
-                if (group.maxSelections > 0) append(" â€¢ ${chooseUpToFormat.format(group.maxSelections)}")
-            },
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
+    Column(verticalArrangement = Arrangement.spacedBy(RagnalaSpacing.xs)) {
+        val rule = when {
+            group.maxSelections == 1 && group.required -> "Choose 1 · Required"
+            group.maxSelections == 1 -> "Choose up to 1"
+            group.required && group.maxSelections > 0 -> "Choose at least ${group.minSelections} · Up to ${group.maxSelections}"
+            group.maxSelections > 0 -> "Choose up to ${group.maxSelections}"
+            group.required -> "Required"
+            else -> "Optional"
+        }
+        RagnalaSectionHeader(title = group.name, subtitle = rule)
         options.forEach { option ->
-            val selected = option.id in selectedOptionIds
-            val delta = option.priceDelta
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = if (selected) MaterialTheme.colorScheme.primaryContainer
-                else MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onToggle(option.id) },
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(22.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (selected) MaterialTheme.colorScheme.primary
-                                else Color.Transparent,
-                            ),
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = option.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f),
-                    )
-                    if (delta != 0L) {
-                        Text(
-                            text = if (delta > 0) "+${formatRupiah(delta)}" else formatRupiah(delta),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+            ModifierOptionRow(option, selectedOptionIds.contains(option.id), group.maxSelections == 1, onToggle)
+        }
+    }
+}
+
+@Composable
+private fun ModifierOptionRow(
+    option: ModifierOptionEntity,
+    selected: Boolean,
+    singleChoice: Boolean,
+    onToggle: (String) -> Unit,
+) {
+    val shape = RoundedCornerShape(RagnalaRadius.button)
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+            .semantics { this.selected = selected; role = if (singleChoice) Role.RadioButton else Role.Checkbox }
+            .clickable(onClick = { onToggle(option.id) }),
+        shape = shape,
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.45f) else MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = RagnalaSpacing.sm, vertical = RagnalaSpacing.xs), verticalAlignment = Alignment.CenterVertically) {
+            if (singleChoice) {
+                RadioButton(selected = selected, onClick = { onToggle(option.id) }, modifier = Modifier.size(48.dp))
+            } else {
+                Checkbox(checked = selected, onCheckedChange = { onToggle(option.id) }, modifier = Modifier.size(48.dp))
+            }
+            Text(option.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (option.priceDelta != 0L) {
+                Text(if (option.priceDelta > 0) "+${formatRupiah(option.priceDelta)}" else formatRupiah(option.priceDelta), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
 
 @Composable
-private fun QuantityStepper(
-    quantity: Int,
-    onQuantityChange: (Int) -> Unit,
-) {
+private fun QuantityStepper(quantity: Int, onQuantityChange: (Int) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        OutlinedButton(
-            onClick = { onQuantityChange((quantity - 1).coerceAtLeast(1)) },
-            shape = CircleShape,
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-            modifier = Modifier.size(44.dp),
-        ) {
-            Text("âˆ’", style = MaterialTheme.typography.titleLarge)
-        }
-        Text(
-            text = quantity.toString(),
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(horizontal = 16.dp),
-        )
-        Button(
-            onClick = { onQuantityChange(quantity + 1) },
-            shape = CircleShape,
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-            modifier = Modifier.size(44.dp),
-        ) {
-            Text("+", style = MaterialTheme.typography.titleLarge)
-        }
+        QuantityButton("−", "Decrease quantity") { onQuantityChange((quantity - 1).coerceAtLeast(1)) }
+        Text(quantity.toString(), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = RagnalaSpacing.sm))
+        QuantityButton("+", "Increase quantity") { onQuantityChange(quantity + 1) }
+    }
+}
+
+@Composable
+private fun QuantityButton(label: String, description: String, onClick: () -> Unit) {
+    Surface(onClick = onClick, shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(48.dp).semantics { contentDescription = description }) {
+        Box(contentAlignment = Alignment.Center) { Text(label, style = MaterialTheme.typography.titleLarge) }
     }
 }
 
 @Composable
 private fun ProductImage(product: ProductEntity, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(RagnalaRadius.productImage)
     if (product.imagePath != null) {
-        AsyncImage(
-            model = product.imagePath,
-            contentDescription = product.name,
-            contentScale = ContentScale.Crop,
-            modifier = modifier.clip(shape),
-        )
+        AsyncImage(model = product.imagePath, contentDescription = product.name, contentScale = ContentScale.Crop, modifier = modifier.clip(shape))
     } else {
-        Box(
-            modifier = modifier
-                .clip(shape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = product.name.take(1),
-                style = MaterialTheme.typography.displayLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
+        Box(modifier = modifier.clip(shape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+            Text(product.name.take(1), style = MaterialTheme.typography.displayLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
         }
     }
 }

@@ -423,7 +423,7 @@ fun RagnalaApp() {
                     }
                 }
                 OrderConfirmScreen(
-                    items = items,
+                    orderItems = items,
                     customerName = name,
                     scPercent = scPercent.value,
                     taxPercent = taxPercent.value,
@@ -441,8 +441,12 @@ fun RagnalaApp() {
                 arguments = listOf(navArgument("orderId") { type = NavType.StringType }),
             ) { entry ->
                 val orderId = entry.arguments?.getString("orderId").orEmpty()
+                val order by produceState<com.ragnala.pos.data.db.OrderEntity?>(initialValue = null, orderId) {
+                    value = withContext(Dispatchers.IO) { AppGraph.orderDao(context).byId(orderId) }
+                }
                 OrderThankYouScreen(
-                    orderId = orderId,
+                    orderNumber = order?.orderNumber ?: 0L,
+                    customerName = order?.customerName.orEmpty(),
                     onBackToMenu = {
                         navController.navigate(RagnalaRoutes.CUSTOMER) {
                             popUpTo(RagnalaRoutes.CUSTOMER) { inclusive = true }
