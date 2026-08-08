@@ -23,7 +23,10 @@ import com.ragnala.pos.ui.components.RagnalaTopBar
 import com.ragnala.pos.ui.theme.RagnalaSpacing
 import com.ragnala.pos.ui.theme.RagnalaRadius
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -245,6 +248,7 @@ fun RagnalaApp() {
     }
 
     val customerMode = isCustomerRoute(currentRoute)
+    val isLargeStaff = !customerMode && LocalConfiguration.current.screenWidthDp >= 840
     val showCustomerTopBar = currentRoute == RagnalaRoutes.CUSTOMER
     val navigateToTopLevel: (String) -> Unit = { route ->
         navController.navigate(route) {
@@ -269,7 +273,7 @@ fun RagnalaApp() {
             }
         },
         bottomBar = {
-            if (!customerMode) {
+            if (!customerMode && !isLargeStaff) {
                 NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     NavigationBarItem(
                         selected = isBaristaRoute(currentRoute),
@@ -288,6 +292,12 @@ fun RagnalaApp() {
         },
     ) { padding ->
         Row(modifier = Modifier.fillMaxSize()) {
+            if (isLargeStaff) {
+                NavigationRail(containerColor = MaterialTheme.colorScheme.surface) {
+                    NavigationRailItem(selected = isBaristaRoute(currentRoute), onClick = { navigateToTopLevel(RagnalaRoutes.BARISTA) }, icon = { Icon(Icons.Outlined.Person, contentDescription = null) }, label = { Text(stringResource(R.string.nav_barista)) })
+                    NavigationRailItem(selected = isManagementRoute(currentRoute), onClick = { navigateToTopLevel(RagnalaRoutes.MANAGEMENT) }, icon = { Icon(Icons.Filled.Settings, contentDescription = null) }, label = { Text(stringResource(R.string.nav_manage)) })
+                }
+            }
             NavHost(
                 navController = navController,
                 startDestination = RagnalaRoutes.CUSTOMER,

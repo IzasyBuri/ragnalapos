@@ -5,144 +5,102 @@ import com.ragnala.pos.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ragnala.pos.service.ReportSummary
-import com.ragnala.pos.ui.customer.formatRupiah
+import com.ragnala.pos.ui.components.RagnalaCard
+import com.ragnala.pos.ui.components.RagnalaEmptyState
+import com.ragnala.pos.ui.components.RagnalaMoneySize
+import com.ragnala.pos.ui.components.RagnalaMoneyText
+import com.ragnala.pos.ui.components.RagnalaPrimaryButton
+import com.ragnala.pos.ui.components.RagnalaSectionHeader
+import com.ragnala.pos.ui.theme.RagnalaRadius
+import com.ragnala.pos.ui.theme.RagnalaSpacing
 
-/** Reports (PRD Â§9): revenue, profit, COGS, expenses, voided/cancelled, best sellers, payment split. */
 @Composable
-fun ReportsScreen(
-    viewModel: ReportsViewModel,
-    onBack: () -> Unit,
-) {
+fun ReportsScreen(viewModel: ReportsViewModel, onBack: () -> Unit) {
     val period by viewModel.period.collectAsState()
     val summary by viewModel.summary.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val error by viewModel.error.collectAsState()
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 2.dp) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.mgmt_back)) }
-                Text(stringResource(R.string.mgmt_reports_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 8.dp))
-            }
+    Column(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack, modifier = Modifier.padding(RagnalaSpacing.xxs)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.mgmt_back)) }
+            Column(Modifier.weight(1f)) { Text("Reports", style = MaterialTheme.typography.headlineSmall); Text("Sales and store performance", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            RagnalaPrimaryButton(stringResource(R.string.mgmt_refresh), { viewModel.refresh() }, modifier = Modifier.padding(end = RagnalaSpacing.xs))
         }
-
-        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ReportPeriod.entries.forEach { p ->
-                FilterChip(
-                    selected = period == p,
-                    onClick = { viewModel.selectPeriod(p) },
-                    label = { Text(p.label) },
-                )
-            }
+        Row(Modifier.fillMaxWidth().padding(horizontal = RagnalaSpacing.md, vertical = RagnalaSpacing.xs), horizontalArrangement = Arrangement.spacedBy(RagnalaSpacing.xs)) {
+            ReportPeriod.entries.forEach { p -> FilterChip(selected = period == p, onClick = { viewModel.selectPeriod(p) }, label = { Text(p.label) }, modifier = Modifier.padding(vertical = 2.dp)) }
         }
-        Button(onClick = { viewModel.refresh() }, modifier = Modifier.padding(horizontal = 16.dp)) {
-            Text(stringResource(R.string.mgmt_refresh))
-        }
-
-        error?.let {
-            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(16.dp))
-        }
-
-        if (loading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(stringResource(R.string.mgmt_loading)) }
-        } else {
-            val s = summary
-            if (s == null) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.mgmt_no_data), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-                }
-            } else {
-                ReportsContent(s, onBack = onBack)
-            }
-        }
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(RagnalaSpacing.md)) }
+        if (loading) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(stringResource(R.string.mgmt_loading)) }
+        else summary?.let { ReportsContent(it) } ?: RagnalaEmptyState("No sales for this period", "Sales activity will appear here once orders are recorded.", Modifier.fillMaxSize())
     }
 }
 
 @Composable
-private fun ReportsContent(s: ReportSummary, onBack: () -> Unit) {
-    LazyColumn(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
+private fun ReportsContent(s: ReportSummary) {
+    val paymentTotal = s.paymentBreakdown.sumOf { it.amount }
+    LazyColumn(Modifier.fillMaxWidth().padding(horizontal = RagnalaSpacing.md), contentPadding = PaddingValues(bottom = RagnalaSpacing.lg), verticalArrangement = Arrangement.spacedBy(RagnalaSpacing.md)) {
         item {
-            Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 2.dp, shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    MetricRow(stringResource(R.string.mgmt_orders), "${s.orderCount}")
-                    MetricRow(stringResource(R.string.mgmt_revenue), formatRup(s.revenue), bold = true)
-                    MetricRow(stringResource(R.string.mgmt_cost_of_goods), formatRup(s.cogs))
-                    MetricRow(stringResource(R.string.mgmt_expenses_title), formatRup(s.expenses))
-                    MetricRow(stringResource(R.string.mgmt_estimated_profit), formatRup(s.profit), bold = true)
-                    MetricRow(stringResource(R.string.mgmt_voided), formatRup(s.voidedAmount))
-                    MetricRow(stringResource(R.string.mgmt_cancelled), formatRup(s.cancelledAmount))
-                }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(RagnalaSpacing.sm)) {
+                KpiCard("Revenue", s.revenue, Modifier.weight(1f))
+                KpiCard("Profit", s.profit, Modifier.weight(1f), MaterialTheme.colorScheme.primary)
             }
         }
-        item { Text(stringResource(R.string.mgmt_by_payment_method), style = MaterialTheme.typography.titleMedium) }
-        if (s.paymentBreakdown.isEmpty()) {
-            item { Text(stringResource(R.string.mgmt_no_confirmed_payments), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        } else {
-            s.paymentBreakdown.forEach { p ->
-                item {
-                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-                        Text("${p.method} (${p.count})", modifier = Modifier.weight(1f))
-                        Text(formatRup(p.amount))
-                    }
-                }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(RagnalaSpacing.sm)) {
+                KpiCard("Orders", s.orderCount.toLong(), Modifier.weight(1f), isMoney = false)
+                KpiCard("Expenses", s.expenses, Modifier.weight(1f))
             }
         }
-        item { Text(stringResource(R.string.mgmt_best_sellers), style = MaterialTheme.typography.titleMedium) }
-        if (s.bestSellers.isEmpty()) {
-            item { Text(stringResource(R.string.mgmt_no_sales), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        } else {
-            items(s.bestSellers, key = { it.productName }) { b ->
-                Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 1.dp, shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
-                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(b.productName, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                        Text("${b.qty}", style = MaterialTheme.typography.bodyMedium)
-                        Text("  ${formatRup(b.revenue)}", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-            }
+        item { RagnalaSectionHeader("Operational details") }
+        item { RagnalaCard { MetricRow("COGS", s.cogs); MetricRow("Voided", s.voidedAmount); MetricRow("Cancelled", s.cancelledAmount) } }
+        item { RagnalaSectionHeader("Payment methods") }
+        if (s.paymentBreakdown.isEmpty()) item { Text(stringResource(R.string.mgmt_no_confirmed_payments), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        else itemsIndexed(s.paymentBreakdown) { index, payment ->
+            PaymentRow(payment.method, payment.amount, payment.count, paymentTotal)
         }
-        item { TextButton(onClick = onBack) { Text(stringResource(R.string.mgmt_back)) } }
+        item { RagnalaSectionHeader("Best sellers") }
+        if (s.bestSellers.isEmpty()) item { Text(stringResource(R.string.mgmt_no_sales), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        else itemsIndexed(s.bestSellers, key = { _, it -> it.productName }) { index, best ->
+            RagnalaCard(contentPadding = RagnalaSpacing.sm) { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text("${index + 1}", style = MaterialTheme.typography.titleLarge, color = if (index == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = RagnalaSpacing.md)); Column(Modifier.weight(1f)) { Text(best.productName, style = MaterialTheme.typography.titleMedium); Text("${best.qty} sold", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }; RagnalaMoneyText(best.revenue, size = RagnalaMoneySize.Small) } }
+        }
     }
 }
 
 @Composable
-private fun MetricRow(label: String, value: String, bold: Boolean = false) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-        Text(value, style = if (bold) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium, fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal)
-    }
+private fun KpiCard(label: String, value: Long, modifier: Modifier, color: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface, isMoney: Boolean = true) {
+    RagnalaCard(modifier = modifier) { Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant); if (isMoney) RagnalaMoneyText(value, size = RagnalaMoneySize.Medium, color = color) else Text(value.toString(), style = MaterialTheme.typography.headlineSmall, color = color) }
 }
 
-private fun formatRup(v: Long): String = formatRupiah(v)
+@Composable
+private fun PaymentRow(method: String, amount: Long, count: Int, total: Long) {
+    val proportion = if (total > 0) amount.toFloat() / total else 0f
+    RagnalaCard(contentPadding = RagnalaSpacing.sm) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text("$method · $count", style = MaterialTheme.typography.titleMedium); Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(50), modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) { Surface(color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(50), modifier = Modifier.fillMaxWidth(proportion.coerceIn(0.02f, 1f)).padding(vertical = 3.dp)) {} } }; RagnalaMoneyText(amount, size = RagnalaMoneySize.Small, modifier = Modifier.padding(start = RagnalaSpacing.md)) } }
+}
+
+@Composable
+private fun MetricRow(label: String, value: Long) { Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) { Text(label, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant); RagnalaMoneyText(value, size = RagnalaMoneySize.Small) } }
