@@ -5,9 +5,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 
-// DESIGN.md §Design Style — flat colors, soft shadows, no neon, no heavy contrast.
-// Semantic colors are non-text only (REVIEW.md §5) — text uses TextPrimary/TextSecondary.
 private val LightColors = lightColorScheme(
     primary = ForestGreen,
     onPrimary = SoftWhite,
@@ -15,37 +14,59 @@ private val LightColors = lightColorScheme(
     onPrimaryContainer = TextPrimary,
     secondary = CoffeeBrown,
     onSecondary = SoftWhite,
-    secondaryContainer = LeafGreen,
+    secondaryContainer = CoffeeCream,
     onSecondaryContainer = TextPrimary,
+    tertiary = NaturalGreen,
+    onTertiary = SoftWhite,
+    tertiaryContainer = NaturalGreenContainer,
+    onTertiaryContainer = TextPrimary,
     background = WarmCream,
     onBackground = TextPrimary,
     surface = SoftWhite,
     onSurface = TextPrimary,
-    surfaceVariant = WarmCream,
+    surfaceVariant = CoffeeCream,
     onSurfaceVariant = TextSecondary,
     outline = AppOutline,
+    outlineVariant = AppOutlineVariant,
     error = MutedRed,
     onError = SoftWhite,
+    errorContainer = MutedRedContainer,
+    onErrorContainer = TextPrimary,
+    inverseSurface = TextPrimary,
+    inverseOnSurface = SoftWhite,
+    inversePrimary = DarkPrimary,
+    scrim = TextPrimary.copy(alpha = 0.38f),
 )
 
-// "Dark mode should feel like evening inside the café." — DESIGN.md §Dark Theme
 private val DarkColors = darkColorScheme(
     primary = DarkPrimary,
     onPrimary = DarkBackground,
-    primaryContainer = DarkSurfaceHigh,
+    primaryContainer = DarkPrimaryContainer,
     onPrimaryContainer = DarkText,
-    secondary = DarkAccent,
+    secondary = DarkSecondary,
     onSecondary = DarkBackground,
-    secondaryContainer = DarkSurfaceHigh,
+    secondaryContainer = DarkSecondaryContainer,
     onSecondaryContainer = DarkText,
+    tertiary = DarkSuccess,
+    onTertiary = DarkBackground,
+    tertiaryContainer = DarkSuccessContainer,
+    onTertiaryContainer = DarkText,
     background = DarkBackground,
     onBackground = DarkText,
     surface = DarkSurface,
     onSurface = DarkText,
     surfaceVariant = DarkSurfaceHigh,
     onSurfaceVariant = DarkTextSecondary,
-    error = MutedRed,
+    outline = DarkOutline,
+    outlineVariant = DarkOutlineVariant,
+    error = DarkError,
     onError = DarkBackground,
+    errorContainer = DarkErrorContainer,
+    onErrorContainer = DarkText,
+    inverseSurface = DarkText,
+    inverseOnSurface = DarkBackground,
+    inversePrimary = ForestGreen,
+    scrim = Color(0xCC000000),
 )
 
 @Composable

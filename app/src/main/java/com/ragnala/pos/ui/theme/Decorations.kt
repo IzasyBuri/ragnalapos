@@ -33,12 +33,13 @@ import kotlin.math.sin
 @Composable
 fun SteamWisp(
     modifier: Modifier = Modifier,
-    tint: Color = Color(0xFF5DBB7C),
+    tint: Color = Color.Unspecified,
 ) {
+    val resolvedTint = if (tint == Color.Unspecified) MaterialTheme.colorScheme.primary.copy(alpha = 0.72f) else tint
     val transition = rememberInfiniteTransition(label = "steam")
-    val p1 = transition.animateFloat(0f, 1f, infiniteRepeatable(tween(2200, easing = FastOutSlowInEasing), RepeatMode.Restart), label = "s1")
-    val p2 = transition.animateFloat(0f, 1f, infiniteRepeatable(tween(2200, delayMillis = 700, easing = FastOutSlowInEasing), RepeatMode.Restart), label = "s2")
-    val p3 = transition.animateFloat(0f, 1f, infiniteRepeatable(tween(2200, delayMillis = 1400, easing = FastOutSlowInEasing), RepeatMode.Restart), label = "s3")
+    val p1 = transition.animateFloat(0f, 1f, infiniteRepeatable(tween(2400, easing = FastOutSlowInEasing), RepeatMode.Restart), label = "s1")
+    val p2 = transition.animateFloat(0f, 1f, infiniteRepeatable(tween(2400, delayMillis = 800, easing = FastOutSlowInEasing), RepeatMode.Restart), label = "s2")
+    val p3 = transition.animateFloat(0f, 1f, infiniteRepeatable(tween(2400, delayMillis = 1600, easing = FastOutSlowInEasing), RepeatMode.Restart), label = "s3")
 
     Canvas(modifier = modifier) {
         val w = size.width
@@ -48,16 +49,16 @@ fun SteamWisp(
             val drift = sin(progress * 6.28f + baseX) * amp
             val path = Path().apply {
                 moveTo(baseX + drift, y)
-                quadraticBezierTo(
+                quadraticTo(
                     baseX + drift - amp, y - h * 0.18f,
                     baseX + drift + amp * 0.5f, y - h * 0.36f,
                 )
-                quadraticBezierTo(
+                quadraticTo(
                     baseX + drift + amp, y - h * 0.54f,
                     baseX + drift - amp * 0.3f, y - h * 0.72f,
                 )
             }
-            drawPath(path, tint.copy(alpha = alpha * (1f - progress) * 0.5f), style = Stroke(width = 3.dp.toPx()))
+            drawPath(path = path, color = resolvedTint.copy(alpha = alpha * (1f - progress) * 0.42f), style = Stroke(width = 3.dp.toPx()))
         }
         wisp(p1.value, w * 0.35f, w * 0.06f, 1f)
         wisp(p2.value, w * 0.5f, w * 0.05f, 1f)
@@ -73,18 +74,19 @@ fun SteamWisp(
 fun CoinDrop(
     modifier: Modifier = Modifier,
     trigger: Int = 0,
-    tint: Color = Color(0xFFF5A623),
+    tint: Color = Color.Unspecified,
 ) {
+    val resolvedTint = if (tint == Color.Unspecified) MaterialTheme.colorScheme.secondary else tint
     val transition = rememberInfiniteTransition(label = "coin")
-    val rise = transition.animateFloat(0f, 1f, infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Restart), label = "coinRise")
+    val rise = transition.animateFloat(0f, 1f, infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Restart), label = "coinRise")
     Canvas(modifier = modifier) {
         val cx = size.width / 2f
         val baseY = size.height * 0.8f
         val y = baseY - rise.value * size.height * 0.55f
         val r = size.minDimension * 0.22f * (0.7f + 0.3f * (1f - kotlin.math.abs(rise.value - 0.5f) * 2f))
         // coin body
-        drawCircle(tint, r, Offset(cx, y))
-        drawCircle(tint.copy(alpha = 0.5f), r * 0.6f, Offset(cx, y))
+        drawCircle(resolvedTint, r, Offset(cx, y))
+        drawCircle(resolvedTint.copy(alpha = 0.45f), r * 0.6f, Offset(cx, y))
     }
 }
 
@@ -97,9 +99,12 @@ fun OrderProgressBar(
     currentStep: Int,
     modifier: Modifier = Modifier,
     labels: List<String> = listOf("Order", "Paid"),
-    activeColor: Color = Color(0xFF1E7A3D),
-    doneColor: Color = Color(0xFFF5A623),
+    activeColor: Color = Color.Unspecified,
+    doneColor: Color = Color.Unspecified,
 ) {
+    val resolvedActive = if (activeColor == Color.Unspecified) MaterialTheme.colorScheme.primary else activeColor
+    val resolvedDone = if (doneColor == Color.Unspecified) MaterialTheme.colorScheme.secondary else doneColor
+    val inactive = MaterialTheme.colorScheme.outlineVariant
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -108,9 +113,9 @@ fun OrderProgressBar(
         labels.forEachIndexed { i, label ->
             val step = i + 1
             val color = when {
-                step < currentStep -> doneColor
-                step == currentStep -> activeColor
-                else -> Color(0xFFDADADA)
+                step < currentStep -> resolvedDone
+                step == currentStep -> resolvedActive
+                else -> inactive
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Canvas(modifier = Modifier.size(18.dp)) {
@@ -122,7 +127,7 @@ fun OrderProgressBar(
             if (i < labels.lastIndex) {
                 Canvas(modifier = Modifier.weight(1f).height(4.dp)) {
                     drawLine(
-                        color = if (step < currentStep) doneColor else Color(0xFFDADDD7),
+                        color = if (step < currentStep) resolvedDone else inactive,
                         start = Offset(0f, size.height / 2),
                         end = Offset(size.width, size.height / 2),
                         strokeWidth = size.height,
